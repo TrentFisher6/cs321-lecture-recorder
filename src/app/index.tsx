@@ -36,6 +36,7 @@ export default function HomeScreen() {
           <AnimatedIcon />
           <ThemedText type="title" style={styles.title}>
             Welcome to CS 321 Lecture Recorder 🤯🤯🤯
+            Evan Was Here
           </ThemedText>
         </ThemedView>
 
