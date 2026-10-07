@@ -1,56 +1,60 @@
-# Welcome to your Expo app 👋
+# CS321 Lecture Recorder
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Team 10 project for CS 321. Records lectures and turns them into transcripts, notes, and flashcards. Built with Expo and Supabase.
 
-## Get started
+See docs/ARCHITECTURE.md for the overall design and the stories.
 
-1. Install dependencies
+## Setup
 
-   ```bash
-   npm install
-   ```
+You need Node 22+ and git.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+git clone https://github.com/TrentFisher6/cs321-lecture-recorder.git
+cd cs321-lecture-recorder
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Running the app
 
-### Other setup steps
+1. Download Expo Go on your phone and make an Expo account
+2. Log in on your laptop with `npx expo login` (same account as the phone)
+3. Run `npx expo start` and scan the QR code
+4. If it doesn't connect, try `npx expo start --tunnel`
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Screens are in `src/app/`. The app reloads when you save.
 
-## Learn more
+## Making changes
 
-To learn more about developing your project with Expo, look at the following resources:
+Make a branch for your story, then open a pull request when you're done. Don't push straight to main.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```
+git checkout main
+git pull
+git checkout -b story-5
+```
 
-## Join the community
+## Supabase
 
-Join our community of developers creating universal apps.
+Only needed if you're changing the database or the edge function. Ask Trent to add you to the Supabase org first, then:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```
+npx supabase login
+npx supabase link --project-ref dqbheiqawuwzuvcaxvff
+```
+
+Deploy the edge function:
+
+```
+npm run fn:deploy -- process-lecture
+```
+
+Database changes go in migration files, not the dashboard:
+
+```
+npm run db:new <name>
+# write the SQL in the new file in supabase/migrations
+npm run db:push
+npm run db:types
+```
+
+API keys (Claude, Deepgram) are stored as Supabase secrets. Don't put them in `.env` or commit them.
