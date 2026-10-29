@@ -45,7 +45,8 @@
         {
           "microphonePermission": "Allow $(PRODUCT_NAME) to record audio."
         }
-      ]
+      ],
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
