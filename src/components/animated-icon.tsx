@@ -5,6 +5,19 @@ import { Dimensions, StyleSheet, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+// Expo starter logo animation and splash overlay. Nothing imports either one now.
+// The native and web versions live in separate files (.tsx / .web.tsx).
+//
+// Best practices:
+// - Delete both files and animated-icon.module.css once the team agrees, or
+//   swap in our own logo. These show the Expo logo.
+// - Reanimated runs animations on the UI thread, so they stay smooth while
+//   JavaScript is busy. Code in a 'worklet' callback runs there too. Use
+//   scheduleOnRN (as below) to get back to React to update state.
+// - Respect the phone's "reduce motion" setting (Reanimated's useReducedMotion)
+//   for any animation we keep. Long spinning effects can bother some users.
+// - Dimensions.get runs once at import. Use useWindowDimensions inside a component
+//   if the value must follow rotation or window resizing.
 const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
 const DURATION = 600;
 

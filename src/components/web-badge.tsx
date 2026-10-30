@@ -7,6 +7,12 @@ import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
 
+// Expo starter badge showing the Expo version. Only the hidden Explore screen uses it.
+//
+// Best practices:
+// - Remove this together with the Explore screen. It is Expo branding, not ours.
+// - Pick images with `require` in both branches, as below. Metro must see every
+//   image path at build time, so never build a require path from a variable.
 export function WebBadge() {
   const scheme = useColorScheme();
 

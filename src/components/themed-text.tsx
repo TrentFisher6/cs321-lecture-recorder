@@ -3,6 +3,14 @@ import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 import { Fonts, ThemeColor } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+// Expo starter text component. Still used by the starter screens and the web tab bar.
+//
+// Best practices:
+// - New screens should use `T` from kit.tsx instead. Its sizes are set for this
+//   app's users, while the 48pt `title` here is a starter-template size.
+// - Either way, take colors from the theme, never hard-coded, so dark mode works.
+// - Long-term, keep one text component. Move the remaining users over to `T`,
+//   then delete this file.
 export type ThemedTextProps = TextProps & {
   type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
   themeColor?: ThemeColor;

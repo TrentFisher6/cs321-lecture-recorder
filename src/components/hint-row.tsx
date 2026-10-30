@@ -6,6 +6,12 @@ import { ThemedView } from './themed-view';
 
 import { Spacing } from '@/constants/theme';
 
+// Expo starter component. Nothing imports it anymore.
+//
+// Best practices:
+// - Delete unused components once the team agrees. Dead code confuses new
+//   teammates and still has to type-check.
+// - Before deleting, search the project for the name to make sure it is unused.
 type HintRowProps = {
   title?: string;
   hint?: ReactNode;

@@ -1,5 +1,22 @@
 //Taken from https://supabase.com/docs/guides/auth/quickstarts/react-native -Trent
 
+// Supabase email/password form. Not used yet: app/sign-in.tsx has the designed
+// screen and will call these functions once story 1 wires real auth.
+//
+// Best practices:
+// - Talk to Supabase through src/lib/supabase.ts (and later api.ts), never by
+//   creating a second client.
+// - Return early on error. In signUpWithEmail, the "check your inbox" alert also
+//   shows after a failed sign-up because it does not stop after the error alert.
+// - Trim the email before sending it, and check fields are filled in before
+//   calling Supabase, so users get a clear message instead of a server error.
+// - Show the user a friendly message, not the raw error.message, which can be
+//   technical. Log the raw error for debugging.
+// - Never log or store the password. Supabase handles it. The session token is
+//   saved by the client in lib/supabase.ts (expo-sqlite localStorage). Do not
+//   copy it anywhere else.
+// - Use try/finally around the await so `loading` resets even if the call throws.
+
 import { useState } from 'react'
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { supabase } from '../lib/supabase'

@@ -7,6 +7,16 @@ import { useDemo } from '@/demo-store';
 // Staff: Home, Record, Reminders, Profile. Students: Home, Study, Reminders, Profile.
 // Changing `hidden` remounts the navigator, so the role should only change from
 // sign-in or the Profile tab (which both roles share).
+//
+// Best practices:
+// - Native tabs (iOS UITabBar / Android bottom navigation) feel right on each
+//   platform. The web version is app-tabs.web.tsx; Metro picks by file extension.
+// - Every route file in src/app/(app)/ needs a Trigger here, even hidden ones.
+// - Hiding a tab is a UI choice, not security. A hidden route can still be opened by
+//   a deep link, so data rules must live in the database's row-level security.
+// - Keep it to five tabs or fewer. Android shows at most five.
+// - Give every icon an sf (iOS) and md (Android) name, with filled versions for
+//   the selected state.
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];

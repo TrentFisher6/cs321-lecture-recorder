@@ -1,6 +1,17 @@
 // Shared building blocks for the app screens.
 // Design rules: large readable text, 56pt touch targets, one clear action per card,
 // plain words, and an accessibility label on every control.
+//
+// Best practices:
+// - Screens should build from these pieces instead of raw Text/View/Pressable with
+//   their own styles. One change here then updates the whole app, and text size,
+//   spacing, and contrast stay consistent for students who rely on them.
+// - Use theme color names (ThemeColor), never hex codes, so dark mode keeps working.
+// - Use spacing from `Spacing` instead of raw numbers, for the same reason.
+// - Keep these components presentational: props in, callbacks out. No data
+//   fetching or app state in this file.
+// - If this file grows past a few hundred more lines, split it into
+//   components/ui/ with one component per file and an index.ts to re-export them.
 
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { type PropsWithChildren, type ReactNode } from 'react';
@@ -22,11 +33,17 @@ import { useTheme } from '@/hooks/use-theme';
 
 export type IconName = SymbolViewProps['name'];
 
+// Icons use SF Symbols on iOS and Material Symbols on Android/web. Always give all
+// three names ({ ios, android, web }), or the icon is blank on the missing platform.
+// Icons are decorative: pair them with text, because screen readers skip them.
 export function Icon({ name, size = 22, color = 'text' }: { name: IconName; size?: number; color?: ThemeColor }) {
   const theme = useTheme();
   return <SymbolView name={name} size={size} tintColor={theme[color]} />;
 }
 
+// Pick text by role (title, heading, body), not by size. Do not set fontSize in a
+// screen. Leave allowFontScaling on (the default) so a phone's larger-text setting
+// still works, and check layouts at large text sizes.
 type Variant = 'display' | 'title' | 'heading' | 'body' | 'bodyBold' | 'caption';
 
 export function T({ variant = 'body', color = 'text', style, ...rest }: TextProps & { variant?: Variant; color?: ThemeColor }) {
@@ -34,7 +51,14 @@ export function T({ variant = 'body', color = 'text', style, ...rest }: TextProp
   return <Text style={[text[variant], { color: theme[color] }, style]} {...rest} />;
 }
 
-/** Page wrapper. `tab` screens draw their own big title; pushed screens use the stack header. */
+/**
+ * Page wrapper. `tab` screens draw their own big title; pushed screens use the stack header.
+ * It handles safe areas (notch, home bar) so screens do not have to.
+ * `footer` stays pinned below the scroll area. Use it for the screen's main action,
+ * so the action is always reachable without scrolling.
+ * For long or growing lists (hundreds of rows), use a FlatList instead: ScrollView
+ * renders every child at once.
+ */
 export function Screen({
   title,
   subtitle,
@@ -69,6 +93,9 @@ export function Screen({
   );
 }
 
+// A card is only pressable when given onPress, so plain cards are not announced as
+// buttons. Pass accessibilityLabel for pressable cards; otherwise a screen reader
+// reads every text inside one by one.
 export function Card({
   children,
   onPress,
@@ -95,6 +122,9 @@ export function Card({
   );
 }
 
+// Use one `primary` button per screen for the main action. `danger` is for actions
+// that delete or end something, and those should also ask for confirmation.
+// `label` doubles as the accessibility label, so write it as a clear verb phrase.
 type ButtonKind = 'primary' | 'secondary' | 'danger' | 'accent';
 
 export function Button({
@@ -145,7 +175,11 @@ export function Button({
   );
 }
 
-/** Round icon-only button, e.g. "add" in a page header. */
+/**
+ * Round icon-only button, e.g. "add" in a page header.
+ * `label` is required because there is no visible text. hitSlop grows the touch
+ * area past the 48pt circle for users with less precise taps.
+ */
 export function IconButton({ icon, label, onPress, kind = 'secondary' }: { icon: IconName; label: string; onPress: () => void; kind?: ButtonKind }) {
   const theme = useTheme();
   const bg: ThemeColor = kind === 'primary' ? 'primary' : kind === 'danger' ? 'dangerSoft' : 'backgroundSelected';
@@ -162,6 +196,8 @@ export function IconButton({ icon, label, onPress, kind = 'secondary' }: { icon:
   );
 }
 
+// Badges show status. Color is never the only signal: always include a text label,
+// for color-blind users and screen readers.
 type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'primary';
 
 export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?: Tone; icon?: IconName }) {
@@ -184,6 +220,7 @@ export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?:
   );
 }
 
+// accessibilityRole="header" lets screen-reader users jump between sections.
 export function Section({ title, action, children }: PropsWithChildren<{ title: string; action?: ReactNode }>) {
   return (
     <View style={{ gap: Spacing.two }}>
@@ -198,6 +235,8 @@ export function Section({ title, action, children }: PropsWithChildren<{ title: 
   );
 }
 
+// Every list needs an empty state. The message should say what will appear and
+// when, e.g. "Notes show up here after your support staff checks them".
 export function EmptyState({ icon, title, message }: { icon: IconName; title: string; message: string }) {
   return (
     <Card style={{ alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.five }}>
@@ -210,7 +249,12 @@ export function EmptyState({ icon, title, message }: { icon: IconName; title: st
   );
 }
 
-/** Two-to-four option switcher, e.g. Notes / Transcript / Study plan. */
+/**
+ * Two-to-four option switcher, e.g. Notes / Transcript / Study plan.
+ * Controlled component: the parent owns `value` and changes it in `onChange`.
+ * The generic K makes TypeScript reject a value that is not one of the options.
+ * Past four options the labels get cramped, so use a list or separate screens.
+ */
 export function Segmented<K extends string>({
   options,
   value,
@@ -242,6 +286,8 @@ export function Segmented<K extends string>({
   );
 }
 
+// Chips are for picking from a few preset choices. They are easier than typing or a
+// date picker. Selection is shown three ways (border, fill, checkmark), not color alone.
 export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
   const theme = useTheme();
   return (
@@ -262,6 +308,8 @@ export function Chip({ label, selected, onPress }: { label: string; selected?: b
   );
 }
 
+// The whole row is the touch target, not just the small box. accessibilityRole
+// "checkbox" plus accessibilityState makes screen readers say "checked"/"not checked".
 export function Checkbox({ label, checked, onPress }: { label: string; checked: boolean; onPress: () => void }) {
   const theme = useTheme();
   return (
@@ -282,7 +330,11 @@ export function Checkbox({ label, checked, onPress }: { label: string; checked: 
   );
 }
 
-/** Story 10 will read `text` aloud with text-to-speech. Placement is final; behavior is a placeholder. */
+/**
+ * Story 10 will read `text` aloud with text-to-speech. Placement is final; behavior is a placeholder.
+ * When implementing: stop any speech already playing before starting new speech,
+ * stop speech when the screen unmounts, and let the button toggle to "Stop".
+ */
 export function ReadAloudButton({ text: _text }: { text: string }) {
   return (
     <Button
@@ -294,6 +346,8 @@ export function ReadAloudButton({ text: _text }: { text: string }) {
   );
 }
 
+// One shared icon map keeps the same meaning on the same icon across screens.
+// `satisfies` type-checks every entry while keeping the exact keys for autocomplete.
 export const icons = {
   home: { ios: 'house.fill', android: 'home', web: 'home' },
   mic: { ios: 'mic.fill', android: 'mic', web: 'mic' },
@@ -313,6 +367,8 @@ export const icons = {
   sparkles: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
 } satisfies Record<string, IconName>;
 
+// StyleSheet.create at module level builds styles once, not on every render.
+// Body text is 18pt (above the usual 16pt) for readability.
 const text = StyleSheet.create({
   display: { fontSize: 56, lineHeight: 64, fontWeight: '700', fontVariant: ['tabular-nums'] },
   title: { fontSize: 32, lineHeight: 38, fontWeight: '700' },

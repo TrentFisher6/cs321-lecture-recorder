@@ -14,6 +14,15 @@ import { ThemedView } from './themed-view';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDemo } from '@/demo-store';
 
+// Web tab bar. Metro uses this file instead of app-tabs.tsx when building for web.
+//
+// Best practices:
+// - Keep the tab list in sync with app-tabs.tsx. When you add or rename a tab
+//   there, change it here too.
+// - Built from expo-router/ui headless parts (Tabs, TabList, TabTrigger), so
+//   we control the look while the router handles navigation and URLs.
+// - On web, render only the tabs for the current role, not hidden ones. Each
+//   TabTrigger becomes a real link.
 export default function AppTabs() {
   const { role } = useDemo();
   return (
@@ -45,6 +54,8 @@ export default function AppTabs() {
   );
 }
 
+// Spread the trigger props onto Pressable. They carry the press handler and
+// accessibility state, so the button behaves like a real tab.
 export function TabButton({ children, isFocused, ...props }: TabTriggerSlotProps) {
   return (
     <Pressable {...props} style={({ pressed }) => pressed && styles.pressed}>
@@ -103,6 +114,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
   },
+  // Unused since the starter "Docs" link was removed. Delete it along with any
+  // other unused styles during cleanup.
   externalPressable: {
     flexDirection: 'row',
     justifyContent: 'center',

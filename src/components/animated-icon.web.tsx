@@ -3,6 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import Animated, { Keyframe, Easing } from 'react-native-reanimated';
 
 import classes from './animated-icon.module.css';
+
+// Web version of animated-icon.tsx. Metro picks it for web builds. Unused now.
+//
+// Best practices:
+// - Keep both versions' exports identical (AnimatedIcon, AnimatedSplashOverlay), so
+//   imports work on every platform.
+// - The raw <div> and CSS module only work on web. That is why this code lives in
+//   a .web.tsx file and never in shared code.
+// - The `container` style below is unused. Remove unused styles during cleanup.
 const DURATION = 300;
 
 export function AnimatedSplashOverlay() {

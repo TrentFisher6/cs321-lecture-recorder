@@ -8,6 +8,15 @@ import { ThemedView } from '@/components/themed-view';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+// Expandable section from the Expo starter. Only the hidden Explore screen uses it.
+//
+// Best practices:
+// - Useful for long content such as a transcript or extra study-guide detail.
+//   Showing a little at a time is easier to follow.
+// - If reused, add accessibilityRole="button" and accessibilityState={{ expanded }}
+//   to the Pressable, so screen readers say whether it is open.
+// - Make the touch target at least 48pt tall. The current 24pt arrow is small.
+// - The functional update (value => !value) avoids stale state on fast double taps.
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const theme = useTheme();
