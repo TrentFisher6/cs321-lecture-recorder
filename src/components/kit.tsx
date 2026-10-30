@@ -33,17 +33,21 @@ import { useTheme } from '@/hooks/use-theme';
 
 export type IconName = SymbolViewProps['name'];
 
-// Icons use SF Symbols on iOS and Material Symbols on Android/web. Always give all
-// three names ({ ios, android, web }), or the icon is blank on the missing platform.
-// Icons are decorative: pair them with text, because screen readers skip them.
+/**  
+ * Icons use SF Symbols on iOS and Material Symbols on Android/web. Always give all
+ * three names ({ ios, android, web }), or the icon is blank on the missing platform.
+ * Icons are decorative: pair them with text, because screen readers skip them. 
+ */
 export function Icon({ name, size = 22, color = 'text' }: { name: IconName; size?: number; color?: ThemeColor }) {
   const theme = useTheme();
   return <SymbolView name={name} size={size} tintColor={theme[color]} />;
 }
 
-// Pick text by role (title, heading, body), not by size. Do not set fontSize in a
-// screen. Leave allowFontScaling on (the default) so a phone's larger-text setting
-// still works, and check layouts at large text sizes.
+/**
+ * Pick text by role (title, heading, body), not by size. Do not set fontSize in a
+ * screen. Leave allowFontScaling on (the default) so a phone's larger-text setting
+ * still works, and check layouts at large text sizes. 
+ */
 type Variant = 'display' | 'title' | 'heading' | 'body' | 'bodyBold' | 'caption';
 
 export function T({ variant = 'body', color = 'text', style, ...rest }: TextProps & { variant?: Variant; color?: ThemeColor }) {
@@ -93,9 +97,11 @@ export function Screen({
   );
 }
 
-// A card is only pressable when given onPress, so plain cards are not announced as
-// buttons. Pass accessibilityLabel for pressable cards; otherwise a screen reader
-// reads every text inside one by one.
+/* 
+ * A card is only pressable when given onPress, so plain cards are not announced as
+ * buttons. Pass accessibilityLabel for pressable cards; otherwise a screen reader
+ * reads every text inside one by one. 
+ */
 export function Card({
   children,
   onPress,
@@ -122,9 +128,11 @@ export function Card({
   );
 }
 
-// Use one `primary` button per screen for the main action. `danger` is for actions
-// that delete or end something, and those should also ask for confirmation.
-// `label` doubles as the accessibility label, so write it as a clear verb phrase.
+/**  
+ *Use one `primary` button per screen for the main action. `danger` is for actions
+ * that delete or end something, and those should also ask for confirmation.
+ * `label` doubles as the accessibility label, so write it as a clear verb phrase. 
+ */
 type ButtonKind = 'primary' | 'secondary' | 'danger' | 'accent';
 
 export function Button({
@@ -168,7 +176,20 @@ export function Button({
         style,
       ]}>
       {icon ? <Icon name={icon} size={big ? 28 : 22} color={fg} /> : null}
-      <T variant={big ? 'heading' : 'bodyBold'} color={fg}>
+      {/* Android bug workaround: a label sized to its own measured width can come
+          out a fraction of a pixel too narrow after rounding. Android then wraps
+          the last word onto a hidden second line ("As staff" showed as "As").
+          Stretching the label across the button (flexGrow) and centering the text
+          gives it spare room, so no word gets pushed off. Labels stay on one line
+          and shrink slightly if they truly do not fit. */}
+      <T
+        variant={big ? 'heading' : 'bodyBold'}
+        color={fg}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        textBreakStrategy="simple"
+        style={{ flexGrow: 1, flexShrink: 1, textAlign: 'center' }}>
         {label}
       </T>
     </Pressable>
