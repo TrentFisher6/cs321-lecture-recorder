@@ -7,6 +7,16 @@ import { useVisibleLectures } from '@/demo-store';
 import { courses, flashcards } from '@/lib/mock-data';
 
 // Student tab: flashcard decks from verified lectures (story 7 entry point).
+//
+// Best practices:
+// - Students only. The tab is hidden for staff in app-tabs.tsx, and staff reach
+//   flashcards from the lecture screen instead.
+// - Build the deck list from source data on each render rather than storing it in
+//   state. It then updates by itself when a lecture is verified.
+// - Always handle the empty case with a friendly message that says what to expect,
+//   instead of showing a blank screen.
+// - Once real data loads asynchronously, also show a loading state and an error
+//   state with a retry button.
 export default function StudyScreen() {
   const decks = useVisibleLectures()
     .map((lecture) => ({ lecture, count: flashcards.filter((f) => f.lectureId === lecture.id).length }))
@@ -18,6 +28,8 @@ export default function StudyScreen() {
         <EmptyState icon={icons.cards} title="No flashcards yet" message="Cards show up here after your notes are checked." />
       ) : (
         decks.map(({ lecture, count }) => (
+          // Use a stable id as the key, never the array index. React uses keys to
+          // keep the right row state when items are added or removed.
           <Card key={lecture.id}>
             <View style={{ gap: Spacing.one }}>
               <T variant="caption" color="textSecondary">
