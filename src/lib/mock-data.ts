@@ -36,9 +36,9 @@ export type Reminder = {
 };
 
 export const people = {
-  staff: { name: 'Shamini' },
-  student: { name: 'Jared Traggic' },
-  supportedStudents: ['Jared Traggic', 'Trent Fischer', 'Evan Andreas'],
+  staff: { name: 'Shamini V.' },
+  student: { name: 'Jared T.' },
+  supportedStudents: ['Jared T.', 'Trent F.', 'Evan A.'],
 };
 
 export const courses: Course[] = [
