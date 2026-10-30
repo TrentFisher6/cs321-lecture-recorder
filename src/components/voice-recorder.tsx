@@ -23,7 +23,7 @@ const formatTime = (ms: number) => {
   return `${m}:${s}`;
 };
 
-export default function VoiceRecorder({ onSaved }: Props) {
+export default function voice-recorder({ onSaved }: Props) {
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY); // AAC in .m4a
   const recorderState = useAudioRecorderState(recorder);
   const [status, setStatus] = useState<Status>('idle');
