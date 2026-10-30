@@ -11,6 +11,15 @@ type Phase = 'idle' | 'recording' | 'paused';
 
 // GUI for story 2 (record) with a simulated real-time transcript.
 // Real audio capture (expo-audio) and live transcription replace the timer script later.
+//
+// Best practices:
+// - Model the screen as one `phase` value instead of several booleans
+//   (isRecording, isPaused). Impossible combinations then cannot happen.
+// - Staff only. The tab is hidden for students in app-tabs.tsx. When real recording
+//   lands, also check the role before uploading, since hiding a tab is not security.
+// - Before shipping real recording: ask for microphone permission first, keep the
+//   screen awake while recording, and save audio in chunks so a crash mid-lecture
+//   does not lose everything.
 export default function RecordScreen() {
   const theme = useTheme();
   const [courseId, setCourseId] = useState(courses[0].id);
@@ -18,8 +27,13 @@ export default function RecordScreen() {
   const [seconds, setSeconds] = useState(0);
   const [lines, setLines] = useState<TranscriptLine[]>([]);
   const [marked, setMarked] = useState<Set<number>>(new Set());
+  // A ref holds the running count without causing a re-render on each change.
+  // The interval callback reads it, so it never sees a stale value.
   const elapsed = useRef(0);
 
+  // Run the timer only while recording. Returning clearInterval as the cleanup
+  // stops it on pause, stop, or when the user leaves the screen. Without cleanup
+  // the interval keeps running and leaks.
   useEffect(() => {
     if (phase !== 'recording') return;
     const id = setInterval(() => {
@@ -27,6 +41,8 @@ export default function RecordScreen() {
       const t = elapsed.current;
       setSeconds(t);
       if (t % 4 === 0) {
+        // Functional updates (ls => ...) always build on the latest state, which
+        // matters inside timers and async callbacks.
         setLines((ls) => (ls.length < liveScript.length ? [...ls, { ...liveScript[ls.length], start: t }] : ls));
       }
     }, 1000);
@@ -41,6 +57,8 @@ export default function RecordScreen() {
     setPhase('idle');
   };
 
+  // Confirm before ending a recording. An accidental tap on Stop should not end
+  // a lecture, and the cancel option is listed first so it is the safe default.
   const stop = () =>
     Alert.alert('Stop recording?', 'The lecture will be saved and notes will be made.', [
       { text: 'Keep recording', style: 'cancel' },
@@ -59,6 +77,8 @@ export default function RecordScreen() {
     setMarked((m) => new Set(m).add(lines.length - 1));
   };
 
+  // The `!` is safe only because courseId always comes from `courses`. Once courses
+  // load from the database, handle the not-found case instead.
   const course = courses.find((c) => c.id === courseId)!;
   const live = phase === 'recording';
 
@@ -75,6 +95,8 @@ export default function RecordScreen() {
       ) : null}
 
       <Card style={{ alignItems: 'center', gap: Spacing.three, paddingVertical: Spacing.four }}>
+        {/* accessibilityLiveRegion makes Android screen readers announce status
+            changes. Color is never the only signal: the dot always has a text label. */}
         <View style={styles.statusRow} accessibilityLiveRegion="polite">
           <View style={[styles.dot, { backgroundColor: live ? theme.danger : theme.textSecondary }]} />
           <T variant="bodyBold" color={live ? 'danger' : 'textSecondary'}>
@@ -116,6 +138,10 @@ export default function RecordScreen() {
           {lines.length === 0 ? (
             <T color="textSecondary">The transcript shows up here while the teacher talks.</T>
           ) : (
+            // Newest line first, so it stays in view. Copy before reverse() because
+            // reverse() mutates the array, and state must never be mutated.
+            // A long real transcript should move to a FlatList so offscreen
+            // lines are not all rendered at once.
             [...lines].reverse().map((line, i) => {
               const index = lines.length - 1 - i;
               const star = marked.has(index);

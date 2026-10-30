@@ -7,6 +7,15 @@ import { Spacing } from '@/constants/theme';
 import { useDemo, useVisibleLectures, useVisibleReminders } from '@/demo-store';
 import { courses, flashcards, formatDayTime, people } from '@/lib/mock-data';
 
+// Home tab ("/"). Staff and students get different home screens.
+//
+// Best practices:
+// - The default export is the route. Expo Router renders it for this file path.
+// - Split per-role views into separate components instead of one component full of
+//   `if (staff)` checks. Each view then calls only the hooks it needs, and hooks
+//   are never called conditionally (React's rules of hooks).
+// - Data comes from mock data and demo-store for now. When src/lib/api.ts exists,
+//   swap these hooks for api.ts calls. Never call Supabase directly from a screen.
 export default function HomeScreen() {
   const { role } = useDemo();
   return role === 'staff' ? <StaffHome /> : <StudentHome />;
@@ -14,11 +23,15 @@ export default function HomeScreen() {
 
 function StaffHome() {
   const lectures = useVisibleLectures();
+  // Derive lists from the source data on each render instead of storing them in
+  // state. Copies in state can drift out of sync when a lecture gets verified.
   const needsReview = lectures.filter((l) => l.status === 'ready' && !l.verified);
   const processing = lectures.filter((l) => l.status === 'processing');
 
   return (
     <Screen tab title={`Hi, ${people.staff.name.split(' ')[0]}`} subtitle="Here is what needs you today.">
+      {/* Use router.navigate to switch tabs. It reuses the existing tab instead of
+          stacking a second copy, which router.push would do. */}
       <Button big icon={icons.mic} label="Start recording" onPress={() => router.navigate('/record')} />
 
       <Section title="Needs your review">
@@ -37,6 +50,10 @@ function StaffHome() {
         {courses.map((c) => {
           const count = lectures.filter((l) => l.courseId === c.id).length;
           return (
+            // Use the { pathname, params } form for dynamic routes. With typed routes on,
+            // TypeScript checks the path exists and the params match.
+            // Give every pressable card an accessibilityLabel so screen readers say
+            // one clear sentence instead of reading each text piece separately.
             <Card
               key={c.id}
               onPress={() => router.push({ pathname: '/course/[id]', params: { id: c.id } })}
@@ -59,6 +76,9 @@ function StaffHome() {
   );
 }
 
+// Student home keeps choices few and large: next reminder, practice, notes.
+// Students only see verified lectures. useVisibleLectures enforces that in the UI,
+// but the real protection must come from database row-level security.
 function StudentHome() {
   const lectures = useVisibleLectures();
   const reminders = useVisibleReminders();

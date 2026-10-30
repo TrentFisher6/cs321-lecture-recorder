@@ -11,6 +11,14 @@ import { WebBadge } from '@/components/web-badge';
 import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+// Expo starter screen, kept for reference. It is hidden from the tab bar in
+// components/app-tabs.tsx, so users never reach it.
+//
+// Best practices:
+// - Delete this file once the team agrees it is no longer needed, then remove its
+//   hidden Trigger. Unused routes still ship in the bundle.
+// - New screens should use components/kit.tsx (Screen, T, Card) instead of the
+//   ThemedText/ThemedView pattern here, so text size and spacing stay consistent.
 export default function TabTwoScreen() {
   const safeAreaInsets = useSafeAreaInsets();
   const insets = {

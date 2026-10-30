@@ -7,6 +7,14 @@ import { useDemo } from '@/demo-store';
 import { useTheme } from '@/hooks/use-theme';
 import { people } from '@/lib/mock-data';
 
+// Profile tab. Shared by staff and students.
+//
+// Best practices:
+// - The role should come from the signed-in user's row in the profiles table,
+//   not from local state. Never let the app pick its own role in production,
+//   because the role decides what data a user can see.
+// - Profile is shown for both roles on purpose. Changing the role remounts the tab
+//   navigator, and staying on a shared tab avoids landing on a hidden one.
 export default function ProfileScreen() {
   const theme = useTheme();
   const { signOut } = useSession();
@@ -49,6 +57,8 @@ export default function ProfileScreen() {
         </Section>
       )}
 
+      {/* Demo only. Remove this section before a real release, or show it only
+          in development builds with `if (__DEV__)`. */}
       <Section title="Demo">
         <T color="textSecondary">Switch views to see what the other kind of user sees.</T>
         <Button
@@ -58,7 +68,8 @@ export default function ProfileScreen() {
         />
       </Section>
 
-      {/* The Stack.Protected guard in the root layout sends the user to sign-in. */}
+      {/* Do not navigate after sign-out. Clearing the session is enough, because the
+          Stack.Protected guard in the root layout then shows the sign-in screen. */}
       <Button kind="danger" label="Sign out" onPress={signOut} />
     </Screen>
   );
