@@ -3,11 +3,13 @@ import { createContext, use, useEffect, useState, type PropsWithChildren } from 
 
 import { supabase } from '@/lib/supabase';
 
-// Taken from https://docs.expo.dev/router/advanced/authentication/ -Trent
+// Taken from https://docs.expo.dev/router/advanced/authentication/
+// and modified to work with Supabase auth -Trent
 
 const AuthContext = createContext<{
+  signIn: () => void;
   signOut: () => void;
-  session: Session | null;
+  session?: Session | null;
   isLoading: boolean;
 } | null>(null);
 
@@ -25,6 +27,8 @@ export function SessionProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load any saved session, then follow sign-in/sign-out. Stack.Protected in
+  // app/_layout.tsx shows the home screen as soon as session is set.
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
@@ -37,7 +41,12 @@ export function SessionProvider({ children }: PropsWithChildren) {
   return (
     <AuthContext.Provider
       value={{
-        signOut: () => supabase.auth.signOut(),
+        signIn: () => {
+
+        },
+        signOut: () => {
+          supabase.auth.signOut();
+        },
         session,
         isLoading,
       }}>
