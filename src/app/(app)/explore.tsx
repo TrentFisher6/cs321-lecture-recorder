@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CoursesDemo from '@/components/courses-demo';
 import { useSession } from '@/ctx';
-import { createLecture, listLectures, processLecture, type Lecture, type Notes, type TranscriptLine } from '@/lib/api';
+import { createLecture, listLectures, processLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
 
 // Demo of the recording pipeline. Uses a hardcoded audio file in this repo
 const TEST_AUDIO = require('@/assets/audio/test-lecture.m4a');
@@ -90,6 +90,7 @@ export default function LecturesDemo() {
 function LectureDetail({ lecture }: { lecture: Lecture }) {
   const notes = lecture.notes as Notes | null;
   const transcript = (lecture.transcript as TranscriptLine[] | null) ?? [];
+  const studyPlan = (lecture.study_plan as StudyPlan | null) ?? [];
   if (!notes) return <Text>No notes yet.</Text>;
   return (
     <View style={{ gap: 6 }}>
@@ -101,6 +102,21 @@ function LectureDetail({ lecture }: { lecture: Lecture }) {
         <Text key={t.term}>
           <Text style={styles.bold}>{t.term}</Text>: {t.meaning}
         </Text>
+      ))}
+      <Text style={styles.bold}>Flashcards</Text>
+      {lecture.flashcards.map((card) => (
+        <Text key={card.id}>
+          {card.front} → {card.back}
+        </Text>
+      ))}
+      <Text style={styles.bold}>Study plan</Text>
+      {studyPlan.map((section) => (
+        <View key={section.title}>
+          <Text>{section.title}</Text>
+          {section.tasks.map((task) => (
+            <Text key={task}>- {task}</Text>
+          ))}
+        </View>
       ))}
       <Text style={styles.bold}>Transcript (first 10 lines)</Text>
       {transcript.slice(0, 10).map((t) => (

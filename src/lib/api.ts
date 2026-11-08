@@ -3,8 +3,9 @@ import type { Tables } from './database.types';
 import { supabase } from './supabase';
 
 export type Course = Tables<'courses'>;
-export type Lecture = Tables<'lectures'>;
+export type Lecture = Tables<'lectures'> & { flashcards: Tables<'flashcards'>[] };
 export type Notes = { summary: string; keyPoints: string[]; terms: { term: string; meaning: string }[] };
+export type StudyPlan = { title: string; tasks: string[] }[];
 export type TranscriptLine = { speaker: number; start: number; text: string };
 
 async function userId() {
@@ -62,8 +63,10 @@ export async function listCourses() {
   return data;
 }
 
+// Each lecture comes with its flashcards (joined through flashcards.lecture_id)
+// See "Query referenced tables" in https://supabase.com/docs/reference/javascript/select -Trent
 export async function listLectures() {
-  const { data, error } = await supabase.from('lectures').select().order('date', { ascending: false });
+  const { data, error } = await supabase.from('lectures').select('*, flashcards(*)').order('date', { ascending: false });
   if (error) throw error;
   return data;
 }
