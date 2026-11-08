@@ -9,11 +9,14 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { type PropsWithChildren, type ReactNode } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  type TextProps
+  type StyleProp,
+  type TextProps,
+  type ViewStyle
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -83,7 +86,124 @@ export function Screen({
   );
 }
 
+/* 
+ * A card is only pressable when given onPress, so plain cards are not announced as
+ * buttons. Pass accessibilityLabel for pressable cards; otherwise a screen reader
+ * reads every text inside one by one. 
+ */
+export function Card({
+  children,
+  onPress,
+  tone = 'backgroundElement',
+  style,
+  accessibilityLabel,
+}: PropsWithChildren<{
+  onPress?: () => void;
+  tone?: ThemeColor;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
+}>) {
+  const theme = useTheme();
+  const body = [styles.card, { backgroundColor: theme[tone] }, style];
+  if (!onPress) return <View style={body}>{children}</View>;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      style={({ pressed }) => [body, pressed && styles.pressed]}>
+      {children}
+    </Pressable>
+  );
+}
+
+/**  
+ *Use one `primary` button per screen for the main action. `danger` is for actions
+ * that delete or end something, and those should also ask for confirmation.
+ * `label` doubles as the accessibility label, so write it as a clear verb phrase. 
+ */
+type ButtonKind = 'primary' | 'secondary' | 'danger' | 'accent';
+
+export function Button({
+  label,
+  icon,
+  kind = 'primary',
+  onPress,
+  disabled,
+  big,
+  style,
+}: {
+  label: string;
+  icon?: IconName;
+  kind?: ButtonKind;
+  onPress: () => void;
+  disabled?: boolean;
+  big?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  const theme = useTheme();
+  const palette: Record<ButtonKind, [ThemeColor, ThemeColor]> = {
+    primary: ['primary', 'onPrimary'],
+    secondary: ['backgroundSelected', 'text'],
+    danger: ['danger', 'onPrimary'],
+    accent: ['accent', 'onAccent'],
+  };
+  const [bg, fg] = palette[kind];
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      style={({ pressed }) => [
+        styles.button,
+        big && styles.buttonBig,
+        { backgroundColor: theme[bg] },
+        disabled && styles.disabled,
+        pressed && styles.pressed,
+        style,
+      ]}>
+      {icon ? <Icon name={icon} size={big ? 28 : 22} color={fg} /> : null}
+      {/* Android bug workaround: a label sized to its own measured width can come
+          out a fraction of a pixel too narrow after rounding.*/}
+      <T
+        variant={big ? 'heading' : 'bodyBold'}
+        color={fg}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.8}
+        textBreakStrategy="simple"
+        style={{ flexGrow: 1, flexShrink: 1, textAlign: 'center' }}>
+        {label}
+      </T>
+    </Pressable>
+  );
+}
+
 // CONSTANTS
+// One shared icon map keeps the same meaning on the same icon across screens.
+// `satisfies` type-checks every entry while keeping the exact keys for autocomplete.
+export const icons = {
+  home: { ios: 'house.fill', android: 'home', web: 'home' },
+  mic: { ios: 'mic.fill', android: 'mic', web: 'mic' },
+  bell: { ios: 'bell.fill', android: 'notifications', web: 'notifications' },
+  cards: { ios: 'rectangle.stack.fill', android: 'style', web: 'style' },
+  book: { ios: 'book.fill', android: 'menu_book', web: 'menu_book' },
+  check: { ios: 'checkmark.seal.fill', android: 'verified', web: 'verified' },
+  clock: { ios: 'clock.fill', android: 'schedule', web: 'schedule' },
+  chevron: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
+  plus: { ios: 'plus', android: 'add', web: 'add' },
+  trash: { ios: 'trash', android: 'delete', web: 'delete' },
+  star: { ios: 'star.fill', android: 'star', web: 'star' },
+  pause: { ios: 'pause.fill', android: 'pause', web: 'pause' },
+  stop: { ios: 'stop.fill', android: 'stop', web: 'stop' },
+  person: { ios: 'person.fill', android: 'person', web: 'person' },
+  warning: { ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' },
+  sparkles: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
+} satisfies Record<string, IconName>;
+
+
 // Body text is 18pt (above the usual 16pt) for readability.
 const text = StyleSheet.create({
   display: { fontSize: 56, lineHeight: 64, fontWeight: '700', fontVariant: ['tabular-nums'] },
