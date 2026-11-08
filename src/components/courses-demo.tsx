@@ -3,15 +3,22 @@
 import { useEffect, useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import VoiceRecorder from '@/components/voice-recorder';
 import { createCourse, inviteStudent, listCourses, myRole, type Course } from '@/lib/api';
 
-// onUpload uploads the test lecture to a course (see explore.tsx)
-export default function CoursesDemo({ onUpload }: { onUpload: (courseId: string) => void }) {
+// onUploadTest uploads the bundled test audio, onRecorded uploads a new recording (see explore.tsx)
+type Props = {
+  onUploadTest: (courseId: string) => void;
+  onRecorded: (courseId: string, audioUri: string) => void;
+};
+
+export default function CoursesDemo({ onUploadTest, onRecorded }: Props) {
   const [role, setRole] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseName, setCourseName] = useState('');
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('');
+  const [recordingCourseId, setRecordingCourseId] = useState<string | null>(null);
 
   // Load the role and courses once when the screen opens
   useEffect(() => {
@@ -64,10 +71,21 @@ export default function CoursesDemo({ onUpload }: { onUpload: (courseId: string)
         onChangeText={setEmail}
       />
       {courses.map((course) => (
-        <View key={course.id} style={styles.row}>
-          <Text>{course.name}</Text>
-          <Button title="Invite" onPress={() => invite(course)} />
-          <Button title="Upload lecture" onPress={() => onUpload(course.id)} />
+        <View key={course.id}>
+          <View style={styles.row}>
+            <Text>{course.name}</Text>
+            <Button title="Invite" onPress={() => invite(course)} />
+            <Button title="Test upload" onPress={() => onUploadTest(course.id)} />
+            <Button title="Record" onPress={() => setRecordingCourseId(course.id)} />
+          </View>
+          {recordingCourseId === course.id && (
+            <VoiceRecorder
+              onSaved={(uri) => {
+                setRecordingCourseId(null);
+                onRecorded(course.id, uri);
+              }}
+            />
+          )}
         </View>
       ))}
       <Text>{status}</Text>

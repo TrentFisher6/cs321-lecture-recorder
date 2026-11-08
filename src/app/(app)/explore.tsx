@@ -29,17 +29,15 @@ export default function LecturesDemo() {
     listLectures().then(setLectures);
   }, []);
 
-  // Staff upload the test audio to one of their courses
-  async function uploadAndProcess(courseId: string) {
+  // Upload an audio file to a course, then transcribe it and write notes
+  // Reading the file with fetch is from Supabase's Expo example:
+  // https://github.com/supabase/supabase/blob/master/examples/user-management/expo-user-management/components/Avatar.tsx -Trent
+  async function uploadAndProcess(courseId: string, audioUri: string) {
     try {
       setStatus('Uploading...');
-      // Get the bundled audio file and read it into memory
-      const asset = Asset.fromModule(TEST_AUDIO);
-      await asset.downloadAsync();
-      const response = await fetch(asset.localUri!);
-      const audio = await response.arrayBuffer();
+      const audio = await fetch(audioUri).then((res) => res.arrayBuffer());
 
-      const id = await createLecture(courseId, 'Test lecture', audio);
+      const id = await createLecture(courseId, 'Lecture', audio);
       await loadLectures();
 
       setStatus('Transcribing and writing notes (about a minute)...');
@@ -50,6 +48,13 @@ export default function LecturesDemo() {
       setStatus('Failed: ' + e);
     }
     loadLectures();
+  }
+
+  // Upload the bundled test audio instead of recording
+  async function uploadTestLecture(courseId: string) {
+    const asset = Asset.fromModule(TEST_AUDIO);
+    await asset.downloadAsync();
+    uploadAndProcess(courseId, asset.localUri!);
   }
 
   // Tap a lecture to open it, tap again to close it
@@ -64,7 +69,7 @@ export default function LecturesDemo() {
   return (
     <SafeAreaView style={styles.screen}>
       <Button title="Log out" onPress={signOut} />
-      <CoursesDemo onUpload={uploadAndProcess} />
+      <CoursesDemo onUploadTest={uploadTestLecture} onRecorded={uploadAndProcess} />
       <Text>{status}</Text>
       <FlatList
         data={lectures}
