@@ -1,16 +1,13 @@
-import { createContext, use, useState, type PropsWithChildren } from 'react';
+import type { Session } from '@supabase/supabase-js';
+import { createContext, use, useEffect, useState, type PropsWithChildren } from 'react';
+
+import { supabase } from '@/lib/supabase';
 
 // Taken from https://docs.expo.dev/router/advanced/authentication/ -Trent
 
-function useStorageState(_key: string) {
-  const [session, setSession] = useState<string | null>(null);
-  return [[false, session] as [boolean, string | null], setSession] as const;
-}
-
 const AuthContext = createContext<{
-  signIn: () => void;
   signOut: () => void;
-  session?: string | null;
+  session: Session | null;
   isLoading: boolean;
 } | null>(null);
 
@@ -25,18 +22,22 @@ export function useSession() {
 }
 
 export function SessionProvider({ children }: PropsWithChildren) {
-  const [[isLoading, session], setSession] = useStorageState('session');
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setIsLoading(false);
+    });
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    return () => data.subscription.unsubscribe();
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
-        signIn: () => {
-          // Perform sign-in logic here
-          setSession('xxx');
-        },
-        signOut: () => {
-          setSession(null);
-        },
+        signOut: () => supabase.auth.signOut(),
         session,
         isLoading,
       }}>
