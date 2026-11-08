@@ -39,6 +39,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      course_members: {
+        Row: {
+          course_id: string
+          email: string
+          invited_by: string
+        }
+        Insert: {
+          course_id: string
+          email: string
+          invited_by?: string
+        }
+        Update: {
+          course_id?: string
+          email?: string
+          invited_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_members_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           id: string

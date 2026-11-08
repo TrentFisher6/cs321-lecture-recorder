@@ -2,6 +2,7 @@
 import type { Tables } from './database.types';
 import { supabase } from './supabase';
 
+export type Course = Tables<'courses'>;
 export type Lecture = Tables<'lectures'>;
 export type Notes = { summary: string; keyPoints: string[]; terms: { term: string; meaning: string }[] };
 export type TranscriptLine = { speaker: number; start: number; text: string };
@@ -42,6 +43,32 @@ export async function createLecture(title: string, audio: ArrayBuffer) {
 export async function processLecture(lectureId: string) {
   const { error } = await supabase.functions.invoke('process-lecture', { body: { lectureId } });
   if (error) throw error;
+}
+
+// Get the role picked at signup
+export async function myRole() {
+  const { data, error } = await supabase.from('profiles').select('role').eq('id', await userId()).single();
+  if (error) throw error;
+  return data.role;
+}
+
+// Staff: make a new course
+export async function createCourse(name: string) {
+  const { error } = await supabase.from('courses').insert({ owner_id: await userId(), name });
+  if (error) throw error;
+}
+
+// Staff: invite a student by email.
+export async function inviteStudent(courseId: string, email: string) {
+  const { error } = await supabase.from('course_members').insert({ course_id: courseId, email: email.trim().toLowerCase() });
+  if (error) throw error;
+}
+
+// Staff get their own courses, students get the ones they were invited to (we use RLS here)
+export async function listCourses() {
+  const { data, error } = await supabase.from('courses').select().order('name');
+  if (error) throw error;
+  return data;
 }
 
 export async function listLectures() {

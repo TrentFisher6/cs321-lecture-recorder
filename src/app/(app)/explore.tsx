@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Button, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import CoursesDemo from '@/components/courses-demo';
 import { createLecture, listLectures, processLecture, type Lecture, type Notes, type TranscriptLine } from '@/lib/api';
 
 // Demo of the recording pipeline. Uses a hardcoded audio file in this repo
@@ -59,6 +60,7 @@ export default function LecturesDemo() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <CoursesDemo />
       <Button title="Upload + process test lecture" onPress={uploadAndProcess} />
       <Text>{status}</Text>
       <FlatList
