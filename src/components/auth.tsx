@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { supabase } from '../lib/supabase'
 
+// Demo accounts for testing. Create them once with the normal sign up flow -Trent
+const DEMO_PASSWORD = 'demo1234'
+
 export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -15,6 +18,18 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithPassword({
       email: email,
       password: password,
+    })
+
+    if (error) Alert.alert(error.message)
+    setLoading(false)
+  }
+
+  // Debug only: one tap sign in as a demo account
+  async function debugSignIn(role: 'student' | 'staff') {
+    setLoading(true)
+    const { error } = await supabase.auth.signInWithPassword({
+      email: role == 'student' ? `trent+student1@gmu.edu` : `trent+staff@gmu.edu`,
+      password: DEMO_PASSWORD,
     })
 
     if (error) Alert.alert(error.message)
@@ -97,6 +112,21 @@ export default function Auth() {
           </TouchableOpacity>
         </View>
       )}
+      {/* __DEV__ is true only in development builds -Trent */}
+      {__DEV__ && (
+        <View style={[styles.verticallySpaced, styles.mt20]}>
+          <TouchableOpacity style={styles.debugButton} onPress={() => debugSignIn('student')} disabled={loading}>
+            <Text style={styles.buttonText}>Debug: log in as student</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.debugButton, styles.mt20]}
+            onPress={() => debugSignIn('staff')}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Debug: log in as staff</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   )
 }
@@ -129,6 +159,12 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#2089dc',
+    borderRadius: 4,
+    padding: 12,
+    alignItems: 'center',
+  },
+  debugButton: {
+    backgroundColor: '#86939e',
     borderRadius: 4,
     padding: 12,
     alignItems: 'center',

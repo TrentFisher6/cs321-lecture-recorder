@@ -4,12 +4,14 @@ import { Button, FlatList, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CoursesDemo from '@/components/courses-demo';
+import { useSession } from '@/ctx';
 import { createLecture, listLectures, processLecture, type Lecture, type Notes, type TranscriptLine } from '@/lib/api';
 
 // Demo of the recording pipeline. Uses a hardcoded audio file in this repo
 const TEST_AUDIO = require('@/assets/audio/test-lecture.m4a');
 
 export default function LecturesDemo() {
+  const { signOut } = useSession();
   const [lectures, setLectures] = useState<Lecture[]>([]);
   const [status, setStatus] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -60,6 +62,7 @@ export default function LecturesDemo() {
 
   return (
     <SafeAreaView style={styles.screen}>
+      <Button title="Log out" onPress={signOut} />
       <CoursesDemo />
       <Button title="Upload + process test lecture" onPress={uploadAndProcess} />
       <Text>{status}</Text>
