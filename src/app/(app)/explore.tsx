@@ -29,7 +29,8 @@ export default function LecturesDemo() {
     listLectures().then(setLectures);
   }, []);
 
-  async function uploadAndProcess() {
+  // Staff upload the test audio to one of their courses
+  async function uploadAndProcess(courseId: string) {
     try {
       setStatus('Uploading...');
       // Get the bundled audio file and read it into memory
@@ -38,7 +39,7 @@ export default function LecturesDemo() {
       const response = await fetch(asset.localUri!);
       const audio = await response.arrayBuffer();
 
-      const id = await createLecture('Test lecture', audio);
+      const id = await createLecture(courseId, 'Test lecture', audio);
       await loadLectures();
 
       setStatus('Transcribing and writing notes (about a minute)...');
@@ -63,8 +64,7 @@ export default function LecturesDemo() {
   return (
     <SafeAreaView style={styles.screen}>
       <Button title="Log out" onPress={signOut} />
-      <CoursesDemo />
-      <Button title="Upload + process test lecture" onPress={uploadAndProcess} />
+      <CoursesDemo onUpload={uploadAndProcess} />
       <Text>{status}</Text>
       <FlatList
         data={lectures}

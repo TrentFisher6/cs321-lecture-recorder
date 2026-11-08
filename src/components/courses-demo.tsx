@@ -5,7 +5,8 @@ import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { createCourse, inviteStudent, listCourses, myRole, type Course } from '@/lib/api';
 
-export default function CoursesDemo() {
+// onUpload uploads the test lecture to a course (see explore.tsx)
+export default function CoursesDemo({ onUpload }: { onUpload: (courseId: string) => void }) {
   const [role, setRole] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [courseName, setCourseName] = useState('');
@@ -66,6 +67,7 @@ export default function CoursesDemo() {
         <View key={course.id} style={styles.row}>
           <Text>{course.name}</Text>
           <Button title="Invite" onPress={() => invite(course)} />
+          <Button title="Upload lecture" onPress={() => onUpload(course.id)} />
         </View>
       ))}
       <Text>{status}</Text>

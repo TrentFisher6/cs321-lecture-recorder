@@ -13,21 +13,12 @@ async function userId() {
   return data.user.id;
 }
 
-// Lectures need a course. Until course screens exist, use a demo course -Trent
-async function demoCourseId(owner: string) {
-  const { data: existing } = await supabase.from('courses').select('id').eq('owner_id', owner).limit(1);
-  if (existing?.length) return existing[0].id;
-  const { data, error } = await supabase.from('courses').insert({ owner_id: owner, name: 'Demo course' }).select('id').single();
-  if (error) throw error;
-  return data.id;
-}
-
 // Create a lecture row and upload its audio to storage at <user id>/<lecture id>.m4a
-export async function createLecture(title: string, audio: ArrayBuffer) {
+export async function createLecture(courseId: string, title: string, audio: ArrayBuffer) {
   const owner = await userId();
   const { data: lecture, error } = await supabase
     .from('lectures')
-    .insert({ owner_id: owner, course_id: await demoCourseId(owner), title })
+    .insert({ owner_id: owner, course_id: courseId, title })
     .select()
     .single();
   if (error) throw error;
