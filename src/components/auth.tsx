@@ -70,17 +70,22 @@ export default function Auth() {
         </TouchableOpacity>
       </View>
       {choosingRole ? (
-        (['student', 'staff'] as const).map((role) => (
-          <View key={role} style={styles.verticallySpaced}>
-            <TouchableOpacity
-              style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={() => signUpWithEmail(role)}
-              disabled={loading}
-            >
-              <Text style={styles.buttonText}>I am {role === 'student' ? 'a student' : 'staff'}</Text>
-            </TouchableOpacity>
-          </View>
-        ))
+        <View style={styles.verticallySpaced}>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={() => signUpWithEmail('student')}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>I am a student</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.mt20, loading && styles.buttonDisabled]}
+            onPress={() => signUpWithEmail('staff')}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>I am staff</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <View style={styles.verticallySpaced}>
           <TouchableOpacity

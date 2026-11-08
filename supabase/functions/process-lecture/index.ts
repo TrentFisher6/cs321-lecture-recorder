@@ -36,10 +36,12 @@ Deno.serve(async (req) => {
   try {
     const { data: lecture, error } = await supabase
       .from("lectures").select("audio_path").eq("id", lectureId).single();
-    if (error || !lecture?.audio_path) throw error ?? new Error("Lecture has no audio");
+    if (error) throw error;
+    if (!lecture.audio_path) throw new Error("Lecture has no audio");
     await setLecture({ status: "processing" });
 
     // 1. Transcribe. Deepgram downloads the audio itself
+    // Taken from https://www.npmjs.com/package/@deepgram/sdk -Trent
     const { data: signed } = await supabase.storage.from("lectures").createSignedUrl(lecture.audio_path, 600);
     const dg = await fetch(
       "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&diarize=true&utterances=true",
@@ -54,11 +56,10 @@ Deno.serve(async (req) => {
     const transcript = utterances.map((u) => ({ speaker: u.speaker, start: u.start, text: u.transcript }));
 
     // 2. Process using claude, export as json schema
-    const message = await anthropic.beta.messages.stream({
+    // Taken from https://platform.claude.com/docs/en/cli-sdks-libraries/sdks/typescript -Trent
+    const message = await anthropic.messages.stream({
       model: "claude-sonnet-5",
       max_tokens: 64000,
-      betas: ["server-side-fallback-2026-07-01"],
-      fallbacks: "default",
       output_config: { format: { type: "json_schema", schema: notesSchema } },
       system:
         "You write study notes for college students with intellectual disabilities. " +

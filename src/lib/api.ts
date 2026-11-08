@@ -1,1 +1,51 @@
-// TODO will contain API calls to the backend. For now, we are using mock data in src/lib/mock-data.tsx.
+// All backend calls go through here. Screens should not call supabase directly.
+import type { Tables } from './database.types';
+import { supabase } from './supabase';
+
+export type Lecture = Tables<'lectures'>;
+export type Notes = { summary: string; keyPoints: string[]; terms: { term: string; meaning: string }[] };
+export type TranscriptLine = { speaker: number; start: number; text: string };
+
+async function userId() {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error('Not signed in');
+  return data.user.id;
+}
+
+// Lectures need a course. Until course screens exist, use a demo course -Trent
+async function demoCourseId(owner: string) {
+  const { data: existing } = await supabase.from('courses').select('id').eq('owner_id', owner).limit(1);
+  if (existing?.length) return existing[0].id;
+  const { data, error } = await supabase.from('courses').insert({ owner_id: owner, name: 'Demo course' }).select('id').single();
+  if (error) throw error;
+  return data.id;
+}
+
+// Create a lecture row and upload its audio to storage at <user id>/<lecture id>.m4a
+export async function createLecture(title: string, audio: ArrayBuffer) {
+  const owner = await userId();
+  const { data: lecture, error } = await supabase
+    .from('lectures')
+    .insert({ owner_id: owner, course_id: await demoCourseId(owner), title })
+    .select()
+    .single();
+  if (error) throw error;
+
+  const path = `${owner}/${lecture.id}.m4a`;
+  const upload = await supabase.storage.from('lectures').upload(path, audio, { contentType: 'audio/mp4' });
+  if (upload.error) throw upload.error;
+  await supabase.from('lectures').update({ audio_path: path }).eq('id', lecture.id);
+  return lecture.id;
+}
+
+// Transcribe and summarize on the edge function
+export async function processLecture(lectureId: string) {
+  const { error } = await supabase.functions.invoke('process-lecture', { body: { lectureId } });
+  if (error) throw error;
+}
+
+export async function listLectures() {
+  const { data, error } = await supabase.from('lectures').select().order('date', { ascending: false });
+  if (error) throw error;
+  return data;
+}
