@@ -1,46 +1,80 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
+// Turns an uploaded lecture into a transcript (Deepgram) and notes (Claude)
+import Anthropic from "@anthropic-ai/sdk";
 import "@supabase/functions-js/edge-runtime.d.ts";
-import { withSupabase } from "@supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
-console.log("Hello from Functions!");
+const anthropic = new Anthropic();
 
-// This endpoint uses 'publishable' | 'secret' access, apiKey is required.
-// Use publishable for Client-facing, key-validated endpoints
-// Use secret for Server-to-server, internal calls
-export default {
-  fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
-    // Called by another service with a secret key
-    // ctx.supabaseAdmin bypasses RLS — use for privileged operations
-    /*
-    if (ctx.authMode === "secret") {
-      const { user_id } = await req.json();
-      const { data } = await ctx.supabaseAdmin.auth.admin.getUserById(user_id);
-
-      return Response.json({
-        email: data?.user?.email,
-      });
-    }
-    */
-
-    const { name } = await req.json();
-
-    return Response.json({
-      message: `Hello ${name}!`,
-    });
-  }),
+const notesSchema = {
+  type: "object",
+  properties: {
+    summary: { type: "string" },
+    keyPoints: { type: "array", items: { type: "string" } },
+    terms: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { term: { type: "string" }, meaning: { type: "string" } },
+        required: ["term", "meaning"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["summary", "keyPoints", "terms"],
+  additionalProperties: false,
 };
 
-/* To invoke locally:
+Deno.serve(async (req) => {
+  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization")! } },
+  });
+  const { lectureId } = await req.json();
 
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
+  const setLecture = (fields: Record<string, unknown>) =>
+    supabase.from("lectures").update(fields).eq("id", lectureId);
 
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/process-lecture' \
-    --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
-    --data '{"name":"Functions"}'
+  try {
+    const { data: lecture, error } = await supabase
+      .from("lectures").select("audio_path").eq("id", lectureId).single();
+    if (error || !lecture?.audio_path) throw error ?? new Error("Lecture has no audio");
+    await setLecture({ status: "processing" });
 
-*/
+    // 1. Transcribe. Deepgram downloads the audio itself
+    const { data: signed } = await supabase.storage.from("lectures").createSignedUrl(lecture.audio_path, 600);
+    const dg = await fetch(
+      "https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&diarize=true&utterances=true",
+      {
+        method: "POST",
+        headers: { Authorization: `Token ${Deno.env.get("DEEPGRAM_API_KEY")}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ url: signed!.signedUrl }),
+      },
+    );
+    if (!dg.ok) throw new Error(`Deepgram ${dg.status}: ${await dg.text()}`);
+    const utterances: { speaker: number; start: number; transcript: string }[] = (await dg.json()).results.utterances;
+    const transcript = utterances.map((u) => ({ speaker: u.speaker, start: u.start, text: u.transcript }));
+
+    // 2. Process using claude, export as json schema
+    const message = await anthropic.beta.messages.stream({
+      model: "claude-sonnet-5",
+      max_tokens: 64000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      output_config: { format: { type: "json_schema", schema: notesSchema } },
+      system:
+        "You write study notes for college students with intellectual disabilities. " +
+        "Use short, plain sentences. Include any deadlines, quizzes, or homework the teacher mentions.",
+      messages: [{ role: "user", content: transcript.map((t) => t.text).join("\n") }],
+    }).finalMessage();
+    if (message.stop_reason === "refusal") throw new Error("Claude declined to write notes");
+    const text = message.content.find((b) => b.type === "text");
+    const notes = JSON.parse(text!.text);
+
+    // 3. Save.
+    await setLecture({ transcript, notes, status: "ready" });
+    return Response.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    await setLecture({ status: "error" });
+    return Response.json({ error: String(e) }, { status: 500 });
+  }
+});
