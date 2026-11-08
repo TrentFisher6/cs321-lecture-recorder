@@ -8,6 +8,7 @@ export default function Auth() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [choosingRole, setChoosingRole] = useState(false)
 
   async function signInWithEmail() {
     setLoading(true)
@@ -20,7 +21,7 @@ export default function Auth() {
     setLoading(false)
   }
 
-  async function signUpWithEmail() {
+  async function signUpWithEmail(role: 'student' | 'staff') {
     setLoading(true)
     const {
       data: { session },
@@ -28,6 +29,7 @@ export default function Auth() {
     } = await supabase.auth.signUp({
       email: email,
       password: password,
+      options: { data: { role } },
     })
 
     if (error) Alert.alert(error.message)
@@ -67,15 +69,29 @@ export default function Auth() {
           <Text style={styles.buttonText}>Sign in</Text>
         </TouchableOpacity>
       </View>
-      <View style={styles.verticallySpaced}>
-        <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={() => signUpWithEmail()}
-          disabled={loading}
-        >
-          <Text style={styles.buttonText}>Sign up</Text>
-        </TouchableOpacity>
-      </View>
+      {choosingRole ? (
+        (['student', 'staff'] as const).map((role) => (
+          <View key={role} style={styles.verticallySpaced}>
+            <TouchableOpacity
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={() => signUpWithEmail(role)}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>I am {role === 'student' ? 'a student' : 'staff'}</Text>
+            </TouchableOpacity>
+          </View>
+        ))
+      ) : (
+        <View style={styles.verticallySpaced}>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={() => setChoosingRole(true)}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Sign up</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   )
 }
