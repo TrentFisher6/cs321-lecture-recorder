@@ -120,15 +120,17 @@ function LectureDetail({ lecture, onChanged }: { lecture: Lecture; onChanged: ()
           {card.front} → {card.back}
         </Text>
       ))}
-      <Text style={styles.bold}>Study plan</Text>
-      {studyPlan.map((section) => (
-        <View key={section.title}>
-          <Text>{section.title}</Text>
-          {section.tasks.map((task) => (
-            <Text key={task}>- {task}</Text>
-          ))}
-        </View>
-      ))}
+      {/* Staff edit the study plan in LectureEditor */}
+      {!isOwner && <Text style={styles.bold}>Study plan</Text>}
+      {!isOwner &&
+        studyPlan.map((section) => (
+          <View key={section.title}>
+            <Text>{section.title}</Text>
+            {section.tasks.map((task) => (
+              <Text key={task}>- {task}</Text>
+            ))}
+          </View>
+        ))}
       {!isOwner && <Text style={styles.bold}>Transcript (first 10 lines)</Text>}
       {!isOwner &&
         transcript.slice(0, 10).map((t) => (
