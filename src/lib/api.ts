@@ -6,6 +6,7 @@ export type Course = Tables<'courses'>;
 export type Lecture = Tables<'lectures'> & { flashcards: Tables<'flashcards'>[] };
 // todos is missing on lectures processed before it was added
 export type Notes = { summary: string; todos?: string[]; keyPoints: string[]; terms: { term: string; meaning: string }[] };
+export type Flashcard = Tables<'flashcards'> & { flashcard_reviews: Tables<'flashcard_reviews'>[] };
 export type StudyPlan = { title: string; tasks: string[] }[];
 export type TranscriptLine = { speaker: number; start: number; text: string };
 
@@ -76,4 +77,32 @@ export async function listLectures() {
   const { data, error } = await supabase.from('lectures').select('*, flashcards(*)').order('date', { ascending: false });
   if (error) throw error;
   return data;
+}
+
+// Flashcards that are due now. A card with no review yet is due right away
+export async function listDueFlashcards() {
+  const { data, error } = await supabase.from('flashcards').select('*, flashcard_reviews(*)');
+  if (error) throw error;
+  const now = new Date();
+  return data.filter((card) => {
+    const review = card.flashcard_reviews[0];
+    return !review || new Date(review.due_at) <= now;
+  });
+}
+
+// Spaced repetition based on the Leitner system (https://en.wikipedia.org/wiki/Leitner_system):
+// "Got it" waits twice as long as last time, "Again" starts over at 1 day -Trent
+export async function reviewFlashcard(card: Flashcard, gotIt: boolean) {
+  const review = card.flashcard_reviews[0];
+  const intervalDays = gotIt && review ? review.interval_days * 2 : 1;
+  const dueAt = new Date();
+  dueAt.setDate(dueAt.getDate() + intervalDays);
+
+  // Upsert makes the review row the first time and updates it after that
+  // From https://supabase.com/docs/reference/javascript/upsert -Trent
+  const { error } = await supabase.from('flashcard_reviews').upsert(
+    { flashcard_id: card.id, student_id: await userId(), due_at: dueAt.toISOString(), interval_days: intervalDays },
+    { onConflict: 'flashcard_id,student_id' },
+  );
+  if (error) throw error;
 }

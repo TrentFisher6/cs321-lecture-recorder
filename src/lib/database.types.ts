@@ -98,6 +98,42 @@ export type Database = {
           },
         ]
       }
+      flashcard_reviews: {
+        Row: {
+          due_at: string
+          flashcard_id: string
+          interval_days: number
+          student_id: string
+        }
+        Insert: {
+          due_at?: string
+          flashcard_id: string
+          interval_days?: number
+          student_id?: string
+        }
+        Update: {
+          due_at?: string
+          flashcard_id?: string
+          interval_days?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_reviews_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_reviews_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcards: {
         Row: {
           back: string

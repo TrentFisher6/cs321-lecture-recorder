@@ -4,6 +4,7 @@ import { Button, FlatList, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CoursesDemo from '@/components/courses-demo';
+import FlashcardReview from '@/components/flashcard-review';
 import LectureEditor from '@/components/lecture-editor';
 import { useSession } from '@/ctx';
 import { createLecture, listLectures, processLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
@@ -71,6 +72,7 @@ export default function LecturesDemo() {
     <SafeAreaView style={styles.screen}>
       <Button title="Log out" onPress={signOut} />
       <CoursesDemo onUploadTest={uploadTestLecture} onRecorded={uploadAndProcess} />
+      <FlashcardReview />
       <Text>{status}</Text>
       <FlatList
         data={lectures}
