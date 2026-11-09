@@ -270,34 +270,27 @@ export type Database = {
           created_by: string
           id: string
           remind_at: string
-          student_id: string
+          student_email: string
           title: string
         }
         Insert: {
-          created_by: string
+          created_by?: string
           id?: string
           remind_at: string
-          student_id: string
+          student_email: string
           title: string
         }
         Update: {
           created_by?: string
           id?: string
           remind_at?: string
-          student_id?: string
+          student_email?: string
           title?: string
         }
         Relationships: [
           {
             foreignKeyName: "reminders_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

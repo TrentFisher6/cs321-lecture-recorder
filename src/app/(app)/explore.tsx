@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CoursesDemo from '@/components/courses-demo';
 import FlashcardReview from '@/components/flashcard-review';
 import LectureEditor from '@/components/lecture-editor';
+import RemindersDemo from '@/components/reminders-demo';
 import { useSession } from '@/ctx';
 import { createLecture, listLectures, processLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
 
@@ -70,11 +71,18 @@ export default function LecturesDemo() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <Button title="Log out" onPress={signOut} />
-      <CoursesDemo onUploadTest={uploadTestLecture} onRecorded={uploadAndProcess} />
-      <FlashcardReview />
-      <Text>{status}</Text>
+      {/* Everything above the lectures goes in the list header so the whole page scrolls
+          https://reactnative.dev/docs/flatlist#listheadercomponent -Trent */}
       <FlatList
+        ListHeaderComponent={
+          <View style={styles.header}>
+            <Button title="Log out" onPress={signOut} />
+            <CoursesDemo onUploadTest={uploadTestLecture} onRecorded={uploadAndProcess} />
+            <FlashcardReview />
+            <RemindersDemo />
+            <Text>{status}</Text>
+          </View>
+        }
         data={lectures}
         keyExtractor={(l) => l.id}
         renderItem={({ item }) => (
@@ -143,7 +151,8 @@ function LectureDetail({ lecture, onChanged }: { lecture: Lecture; onChanged: ()
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, padding: 16, gap: 8 },
+  screen: { flex: 1, padding: 16 },
+  header: { gap: 8 },
   row: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, gap: 6 },
   bold: { fontWeight: '600' },
 });

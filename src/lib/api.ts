@@ -7,6 +7,7 @@ export type Lecture = Tables<'lectures'> & { flashcards: Tables<'flashcards'>[] 
 // todos is missing on lectures processed before it was added
 export type Notes = { summary: string; todos?: string[]; keyPoints: string[]; terms: { term: string; meaning: string }[] };
 export type Flashcard = Tables<'flashcards'> & { flashcard_reviews: Tables<'flashcard_reviews'>[] };
+export type Reminder = Tables<'reminders'>;
 export type StudyPlan = { title: string; tasks: string[] }[];
 export type TranscriptLine = { speaker: number; start: number; text: string };
 
@@ -104,5 +105,37 @@ export async function reviewFlashcard(card: Flashcard, gotIt: boolean) {
     { flashcard_id: card.id, student_id: await userId(), due_at: dueAt.toISOString(), interval_days: intervalDays },
     { onConflict: 'flashcard_id,student_id' },
   );
+  if (error) throw error;
+}
+
+// Staff can enter the email of their students
+export async function listInvitedStudents() {
+  const { data, error } = await supabase.from('course_members').select('email');
+  if (error) throw error;
+  // Students can be in more than one course so we dedupe
+  return [...new Set(data.map((row) => row.email))];
+}
+
+// Staff make reminders for their students
+export async function createReminder(studentEmail: string, title: string, remindAt: Date) {
+  const { error } = await supabase
+    .from('reminders')
+    .insert({ student_email: studentEmail, title, remind_at: remindAt.toISOString() });
+  if (error) throw error;
+}
+
+// RLS decides how reminders are shown
+export async function listReminders() {
+  const { data, error } = await supabase
+    .from('reminders')
+    .select()
+    .gte('remind_at', new Date().toISOString())
+    .order('remind_at');
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteReminder(id: string) {
+  const { error } = await supabase.from('reminders').delete().eq('id', id);
   if (error) throw error;
 }
