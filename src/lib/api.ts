@@ -1,5 +1,5 @@
 // All backend calls go through here. Screens should not call supabase directly.
-import type { Tables } from './database.types';
+import type { Tables, TablesUpdate } from './database.types';
 import { supabase } from './supabase';
 
 export type Course = Tables<'courses'>;
@@ -61,6 +61,12 @@ export async function listCourses() {
   const { data, error } = await supabase.from('courses').select().order('name');
   if (error) throw error;
   return data;
+}
+
+// Staff edit a lecture (fix notes or transcript, or mark it verified)
+export async function updateLecture(id: string, fields: TablesUpdate<'lectures'>) {
+  const { error } = await supabase.from('lectures').update(fields).eq('id', id);
+  if (error) throw error;
 }
 
 // Each lecture comes with its flashcards (joined through flashcards.lecture_id)

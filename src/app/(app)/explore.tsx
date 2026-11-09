@@ -4,6 +4,7 @@ import { Button, FlatList, Pressable, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import CoursesDemo from '@/components/courses-demo';
+import LectureEditor from '@/components/lecture-editor';
 import { useSession } from '@/ctx';
 import { createLecture, listLectures, processLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
 
@@ -77,9 +78,9 @@ export default function LecturesDemo() {
         renderItem={({ item }) => (
           <Pressable onPress={() => toggleOpen(item.id)} style={styles.row}>
             <Text style={styles.bold}>
-              {item.title} · {item.status}
+              {item.title} · {item.status} · {item.verified ? 'verified' : 'not verified'}
             </Text>
-            {openId === item.id && <LectureDetail lecture={item} />}
+            {openId === item.id && <LectureDetail lecture={item} onChanged={loadLectures} />}
           </Pressable>
         )}
       />
@@ -87,14 +88,17 @@ export default function LecturesDemo() {
   );
 }
 
-function LectureDetail({ lecture }: { lecture: Lecture }) {
+// The staff member who owns the lecture can edit it, everyone else just reads it
+function LectureDetail({ lecture, onChanged }: { lecture: Lecture; onChanged: () => void }) {
+  const { session } = useSession();
+  const isOwner = session?.user.id === lecture.owner_id;
   const notes = lecture.notes as Notes | null;
   const transcript = (lecture.transcript as TranscriptLine[] | null) ?? [];
   const studyPlan = (lecture.study_plan as StudyPlan | null) ?? [];
   if (!notes) return <Text>No notes yet.</Text>;
   return (
     <View style={{ gap: 6 }}>
-      <Text>{notes.summary}</Text>
+      {isOwner ? <LectureEditor lecture={lecture} onSaved={onChanged} /> : <Text>{notes.summary}</Text>}
       {notes.keyPoints.map((p) => (
         <Text key={p}>• {p}</Text>
       ))}
@@ -118,12 +122,13 @@ function LectureDetail({ lecture }: { lecture: Lecture }) {
           ))}
         </View>
       ))}
-      <Text style={styles.bold}>Transcript (first 10 lines)</Text>
-      {transcript.slice(0, 10).map((t) => (
-        <Text key={t.start}>
-          {t.text}
-        </Text>
-      ))}
+      {!isOwner && <Text style={styles.bold}>Transcript (first 10 lines)</Text>}
+      {!isOwner &&
+        transcript.slice(0, 10).map((t) => (
+          <Text key={t.start}>
+            {t.text}
+          </Text>
+        ))}
     </View>
   );
 }
