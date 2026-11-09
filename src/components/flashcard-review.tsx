@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import ReadAloud from '@/components/read-aloud';
 import { listDueFlashcards, reviewFlashcard, type Flashcard } from '@/lib/api';
 
 export default function FlashcardReview() {
@@ -36,6 +37,7 @@ export default function FlashcardReview() {
             <Text>{flipped ? card.back : card.front}</Text>
             <Text style={styles.hint}>{flipped ? 'Answer' : 'Tap to flip'}</Text>
           </Pressable>
+          <ReadAloud text={flipped ? card.back : card.front} />
           {flipped && (
             <View style={styles.row}>
               <Button title="Again" onPress={() => answer(false)} />

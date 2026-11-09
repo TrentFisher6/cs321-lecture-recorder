@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import ReadAloud from '@/components/read-aloud';
 import {
   createReminder,
   deleteReminder,
@@ -91,6 +92,11 @@ export default function RemindersDemo() {
         </View>
       ))}
       {reminders.length === 0 && <Text>No upcoming reminders.</Text>}
+      {reminders.length > 0 && (
+        <ReadAloud
+          text={reminders.map((r) => `${new Date(r.remind_at).toLocaleString()}: ${r.title}.`).join(' ')}
+        />
+      )}
       <Text>{status}</Text>
     </View>
   );

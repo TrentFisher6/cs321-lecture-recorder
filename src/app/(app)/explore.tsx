@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CoursesDemo from '@/components/courses-demo';
 import FlashcardReview from '@/components/flashcard-review';
 import LectureEditor from '@/components/lecture-editor';
+import ReadAloud from '@/components/read-aloud';
 import RemindersDemo from '@/components/reminders-demo';
 import { useSession } from '@/ctx';
 import { createLecture, listLectures, processLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
@@ -106,8 +107,11 @@ function LectureDetail({ lecture, onChanged }: { lecture: Lecture; onChanged: ()
   const transcript = (lecture.transcript as TranscriptLine[] | null) ?? [];
   const studyPlan = (lecture.study_plan as StudyPlan | null) ?? [];
   if (!notes) return <Text>No notes yet.</Text>;
+  // This tells read alout what to say
+  const spokenNotes = [notes.summary, 'To do.', ...(notes.todos ?? []), 'Key points.', ...notes.keyPoints].join(' ');
   return (
     <View style={{ gap: 6 }}>
+      <ReadAloud text={spokenNotes} />
       {isOwner ? <LectureEditor lecture={lecture} onSaved={onChanged} /> : <Text>{notes.summary}</Text>}
       <Text style={styles.bold}>To do</Text>
       {(notes.todos ?? []).map((todo) => (
