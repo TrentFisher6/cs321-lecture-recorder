@@ -4,7 +4,8 @@ import { supabase } from './supabase';
 
 export type Course = Tables<'courses'>;
 export type Lecture = Tables<'lectures'> & { flashcards: Tables<'flashcards'>[] };
-export type Notes = { summary: string; keyPoints: string[]; terms: { term: string; meaning: string }[] };
+// todos is missing on lectures processed before it was added
+export type Notes = { summary: string; todos?: string[]; keyPoints: string[]; terms: { term: string; meaning: string }[] };
 export type StudyPlan = { title: string; tasks: string[] }[];
 export type TranscriptLine = { speaker: number; start: number; text: string };
 

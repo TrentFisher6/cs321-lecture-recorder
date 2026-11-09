@@ -99,6 +99,11 @@ function LectureDetail({ lecture, onChanged }: { lecture: Lecture; onChanged: ()
   return (
     <View style={{ gap: 6 }}>
       {isOwner ? <LectureEditor lecture={lecture} onSaved={onChanged} /> : <Text>{notes.summary}</Text>}
+      <Text style={styles.bold}>To do</Text>
+      {(notes.todos ?? []).map((todo) => (
+        <Text key={todo}>- {todo}</Text>
+      ))}
+      <Text style={styles.bold}>Key points</Text>
       {notes.keyPoints.map((p) => (
         <Text key={p}>• {p}</Text>
       ))}

@@ -9,6 +9,7 @@ const outputSchema = {
   type: "object",
   properties: {
     summary: { type: "string" },
+    todos: { type: "array", items: { type: "string" } },
     keyPoints: { type: "array", items: { type: "string" } },
     terms: {
       type: "array",
@@ -38,9 +39,26 @@ const outputSchema = {
       },
     },
   },
-  required: ["summary", "keyPoints", "terms", "flashcards", "studyPlan"],
+  required: ["summary", "todos", "keyPoints", "terms", "flashcards", "studyPlan"],
   additionalProperties: false,
 };
+
+// The prompt that claude uses when processing a lecture
+const systemPrompt = 
+`Your job is to turn a lecture transcript into study materials for a college student with an intellectual disability.
+ You should assume that this student reads slowly and gets overwhelmed by long or dense text, so less is more.
+ You should write at about a sixth-grade reading level, with one idea per sentence. Keep your sentences short.
+ No parentheses, semicolons, or abbreviations without explaining them.
+ Explain any technical word in everyday words. Only include what the student absolutely needs.
+ Skip anything related to class averages, grading rules, or other unrelated details that they don\'t need to know. Focus on action items.
+
+In your output, you should include:
+- A summary: three to four short sentences about what was discussed in class.
+- To-dos: things that the student must do, like homework, deadlines, or quizzes. Be sure to include the date if the instructor mentioned it.
+- Key points: at most six.
+- Terms: at most ten words the student must know, each with a short meaning.
+- Flashcards: up to twenty, each testing one single fact, and keep both sides short.
+- Study plan: two to three study sessions, each with a title and at most five tasks.`
 
 Deno.serve(async (req) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -79,10 +97,7 @@ Deno.serve(async (req) => {
       model: "claude-sonnet-5",
       max_tokens: 64000,
       output_config: { format: { type: "json_schema", schema: outputSchema } },
-      system:
-        "You write study notes, flashcards, and a study plan for college students with intellectual disabilities. " +
-        "Use short, plain sentences. Include any deadlines, quizzes, or homework the teacher mentions. " +
-        "Each study plan section is one study session with a few small tasks.",
+      system: systemPrompt,
       messages: [{ role: "user", content: transcript.map((t) => t.text).join("\n") }],
     }).finalMessage();
     if (message.stop_reason === "refusal") throw new Error("Claude declined to write notes");
