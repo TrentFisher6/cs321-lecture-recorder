@@ -27,7 +27,9 @@ export default function VoiceRecorder({ onSaved }: { onSaved: (uri: string) => v
       Alert.alert('Microphone access needed', 'Please allow microphone access in Settings.');
       return;
     }
-    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
+    // Keeps recording even in the background
+    // On Android this shows a notification while recording -Trent
+    await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true, allowsBackgroundRecording: true });
     await recorder.prepareToRecordAsync();
     recorder.record();
     setStatus('recording');
@@ -45,7 +47,7 @@ export default function VoiceRecorder({ onSaved }: { onSaved: (uri: string) => v
 
   async function stop() {
     await recorder.stop();
-    await setAudioModeAsync({ allowsRecording: false });
+    await setAudioModeAsync({ allowsRecording: false, allowsBackgroundRecording: false });
     setStatus('idle');
     // The recording will be available on recorder.uri (from the Expo docs)
     if (recorder.uri) onSaved(recorder.uri);

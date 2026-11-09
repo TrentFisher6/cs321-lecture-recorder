@@ -44,7 +44,8 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to record audio."
+          "microphonePermission": "Allow $(PRODUCT_NAME) to record audio.",
+          "enableBackgroundRecording": true
         }
       ],
       "expo-sqlite",
