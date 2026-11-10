@@ -35,6 +35,14 @@ export async function createLecture(courseId: string, title: string, audio: Arra
   return lecture.id;
 }
 
+// Upload a local test audio file as a lecture
+// Reading the file with fetch is from Supabase's Expo example:
+// https://github.com/supabase/supabase/blob/master/examples/user-management/expo-user-management/components/Avatar.tsx -Trent
+export async function uploadLecture(courseId: string, title: string, audioUri: string) {
+  const audio = await fetch(audioUri).then((res) => res.arrayBuffer());
+  return createLecture(courseId, title, audio);
+}
+
 // Transcribe and summarize on the edge function
 export async function processLecture(lectureId: string) {
   const { error } = await supabase.functions.invoke('process-lecture', { body: { lectureId } });
@@ -75,8 +83,10 @@ export async function updateLecture(id: string, fields: TablesUpdate<'lectures'>
 
 // Each lecture comes with its flashcards (joined through flashcards.lecture_id)
 // See "Query referenced tables" in https://supabase.com/docs/reference/javascript/select -Trent
-export async function listLectures() {
-  const { data, error } = await supabase.from('lectures').select('*, flashcards(*)').order('date', { ascending: false });
+export async function listLectures(courseId?: string) {
+  let query = supabase.from('lectures').select('*, flashcards(*)').order('date', { ascending: false });
+  if (courseId) query = query.eq('course_id', courseId);
+  const { data, error } = await query;
   if (error) throw error;
   return data;
 }

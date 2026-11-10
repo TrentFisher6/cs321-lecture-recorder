@@ -9,7 +9,7 @@ import LectureEditor from '@/components/lecture-editor';
 import ReadAloud from '@/components/read-aloud';
 import RemindersDemo from '@/components/reminders-demo';
 import { useSession } from '@/ctx';
-import { createLecture, listLectures, processLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
+import { listLectures, processLecture, uploadLecture, type Lecture, type Notes, type StudyPlan, type TranscriptLine } from '@/lib/api';
 
 // Demo of the recording pipeline. Uses a hardcoded audio file in this repo
 const TEST_AUDIO = require('@/assets/audio/test-lecture.m4a');
@@ -34,14 +34,10 @@ export default function LecturesDemo() {
   }, []);
 
   // Upload an audio file to a course, then transcribe it and write notes
-  // Reading the file with fetch is from Supabase's Expo example:
-  // https://github.com/supabase/supabase/blob/master/examples/user-management/expo-user-management/components/Avatar.tsx -Trent
   async function uploadAndProcess(courseId: string, audioUri: string) {
     try {
       setStatus('Uploading...');
-      const audio = await fetch(audioUri).then((res) => res.arrayBuffer());
-
-      const id = await createLecture(courseId, 'Lecture', audio);
+      const id = await uploadLecture(courseId, 'Lecture', audioUri);
       await loadLectures();
 
       setStatus('Transcribing and writing notes (about a minute)...');

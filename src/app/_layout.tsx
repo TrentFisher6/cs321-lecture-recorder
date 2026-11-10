@@ -27,6 +27,9 @@ function RootNavigator() {
     <Stack>
       <Stack.Protected guard={!!session}>
         <Stack.Screen name="(app)" />
+        {/* The course name is passed in when the course is opened (see the Courses screen) 
+        fallback to "Course" on error */}
+        <Stack.Screen name="course/[id]" options={({ route }) => ({ title: (route.params as { name?: string })?.name ?? 'Course' })} />
       </Stack.Protected>
       <Stack.Protected guard={!session}>
         <Stack.Screen name="sign-in" />

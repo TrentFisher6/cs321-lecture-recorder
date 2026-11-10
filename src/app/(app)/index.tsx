@@ -1,6 +1,7 @@
 // Courses screen
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Button, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Button, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -94,7 +95,13 @@ function CourseCard({ course, isStaff, onStatus }: { course: Course; isStaff: bo
 
   return (
     <ThemedView type="backgroundElement" style={styles.card}>
-      <ThemedText type="smallBold">{course.name}</ThemedText>
+      {/* Tap on a course button to open the course screen. From https://docs.expo.dev/router/basics/navigation/ -Trent */}
+      <Pressable
+        style={styles.header}
+        onPress={() => router.push({ pathname: '/course/[id]', params: { id: course.id, name: course.name } })}>
+        <ThemedText type="smallBold">{course.name}</ThemedText>
+        <ThemedText themeColor="primary">Open ›</ThemedText>
+      </Pressable>
       {isStaff && (
         <View style={styles.row}>
           <TextInput
