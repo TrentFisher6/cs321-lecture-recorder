@@ -40,6 +40,15 @@ git pull
 git checkout -b story-5
 ```
 
+Run these before submitting a PR. CI will block merging on failing tests
+
+```
+npm run lint
+npm test
+```
+
+Put unit tests in a `__tests__` folder next to the code and end in `-test.ts` like `src/lib/__tests__/spaced-repetition-test.ts`.
+
 ## Supabase
 
 Only needed if you're changing the database or the edge function. Ask Trent to add you to the Supabase org first, then:

@@ -1,5 +1,6 @@
 // All backend calls go through here. Screens should not call supabase directly.
 import type { Tables, TablesUpdate } from './database.types';
+import { isDue, nextReview } from './spaced-repetition';
 import { supabase } from './supabase';
 
 export type Course = Tables<'courses'>;
@@ -85,19 +86,12 @@ export async function listDueFlashcards() {
   const { data, error } = await supabase.from('flashcards').select('*, flashcard_reviews(*)');
   if (error) throw error;
   const now = new Date();
-  return data.filter((card) => {
-    const review = card.flashcard_reviews[0];
-    return !review || new Date(review.due_at) <= now;
-  });
+  return data.filter((card) => isDue(card.flashcard_reviews[0], now));
 }
 
-// Spaced repetition based on the Leitner system (https://en.wikipedia.org/wiki/Leitner_system):
-// "Got it" waits twice as long as last time, "Again" starts over at 1 day -Trent
+// Saves the student's answer. See spaced-repetition.ts
 export async function reviewFlashcard(card: Flashcard, gotIt: boolean) {
-  const review = card.flashcard_reviews[0];
-  const intervalDays = gotIt && review ? review.interval_days * 2 : 1;
-  const dueAt = new Date();
-  dueAt.setDate(dueAt.getDate() + intervalDays);
+  const { intervalDays, dueAt } = nextReview(card.flashcard_reviews[0], gotIt, new Date());
 
   // Upsert makes the review row the first time and updates it after that
   // From https://supabase.com/docs/reference/javascript/upsert -Trent
