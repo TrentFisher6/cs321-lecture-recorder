@@ -1,8 +1,8 @@
 // Course screen. Lists the course's lectures. Staff can record a new lecture here
 import { Asset } from 'expo-asset';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Button, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Button, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -32,11 +32,15 @@ export default function CourseScreen() {
   const [recording, setRecording] = useState(false);
   const [status, setStatus] = useState('');
 
-  // Load the role and this course's lectures when the screen opens
-  useEffect(() => {
-    myRole().then(setRole);
-    listLectures(id).then(setLectures);
-  }, [id]);
+  // Load the role and this course's lectures when the screen opens, and again when coming closing
+  // a lecture (needed because thr status might have changed or it may have been edited).
+  // From https://docs.expo.dev/router/reference/hooks/#usefocuseffect -Trent
+  useFocusEffect(
+    useCallback(() => {
+      myRole().then(setRole);
+      listLectures(id).then(setLectures);
+    }, [id]),
+  );
 
   // Upload the audio and process it to write the notes, summary, and flashcards
   async function addLecture(audioUri: string) {
@@ -96,13 +100,17 @@ export default function CourseScreen() {
 
         <ThemedText type="smallBold">Lectures</ThemedText>
         {lectures.map((lecture) => (
-          <ThemedView key={lecture.id} type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">{lecture.title}</ThemedText>
-            <ThemedText type="small" themeColor="textSecondary">
-              {lecture.date ? new Date(lecture.date).toLocaleDateString() : ''} · {STATUS_TEXT[lecture.status ?? ''] ?? lecture.status}
-              {isStaff ? (lecture.verified ? ' · Verified' : ' · Not verified') : ''}
-            </ThemedText>
-          </ThemedView>
+          <Pressable
+            key={lecture.id}
+            onPress={() => router.push({ pathname: '/lecture/[id]', params: { id: lecture.id, name: lecture.title ?? 'Lecture' } })}>
+            <ThemedView type="backgroundElement" style={styles.card}>
+              <ThemedText type="smallBold">{lecture.title}</ThemedText>
+              <ThemedText type="small" themeColor="textSecondary">
+                {lecture.date ? new Date(lecture.date).toLocaleDateString() : ''} · {STATUS_TEXT[lecture.status ?? ''] ?? lecture.status}
+                {isStaff ? (lecture.verified ? ' · Verified' : ' · Not verified') : ''}
+              </ThemedText>
+            </ThemedView>
+          </Pressable>
         ))}
 
         {role && lectures.length === 0 && (

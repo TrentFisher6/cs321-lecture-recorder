@@ -33,15 +33,6 @@ export default function LectureEditor({ lecture, onSaved }: { lecture: Lecture; 
     }
   }
 
-  async function toggleVerified() {
-    try {
-      await updateLecture(lecture.id, { verified: !lecture.verified });
-      onSaved();
-    } catch (e) {
-      setStatus('Failed: ' + e);
-    }
-  }
-
   return (
     <View style={styles.box}>
       <Text style={styles.bold}>Summary</Text>
@@ -83,7 +74,6 @@ export default function LectureEditor({ lecture, onSaved }: { lecture: Lecture; 
         />
       ))}
       <Button title="Save changes" onPress={save} />
-      <Button title={lecture.verified ? 'Unverify' : 'Mark verified'} onPress={toggleVerified} />
       <Text>{status}</Text>
     </View>
   );

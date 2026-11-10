@@ -91,6 +91,13 @@ export async function listLectures(courseId?: string) {
   return data;
 }
 
+// One lecture with flashcards
+export async function getLecture(id: string) {
+  const { data, error } = await supabase.from('lectures').select('*, flashcards(*)').eq('id', id).single();
+  if (error) throw error;
+  return data;
+}
+
 // Flashcards that are due now. A card with no review yet is due right away
 export async function listDueFlashcards() {
   const { data, error } = await supabase.from('flashcards').select('*, flashcard_reviews(*)');
