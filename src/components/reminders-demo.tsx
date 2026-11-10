@@ -11,6 +11,7 @@ import {
   myRole,
   type Reminder,
 } from '@/lib/api';
+import { parseReminderTime } from '@/lib/time';
 
 export default function RemindersDemo() {
   const [role, setRole] = useState<string | null>(null);
@@ -29,9 +30,8 @@ export default function RemindersDemo() {
   }, []);
 
   async function add() {
-    // Convert to local time
-    const remindAt = new Date(when.replace(' ', 'T'));
-    if (!studentEmail || !title || isNaN(remindAt.getTime())) {
+    const remindAt = parseReminderTime(when);
+    if (!studentEmail || !title || !remindAt) {
       setStatus('Pick a student and use a time like 2026-11-20 14:00');
       return;
     }
