@@ -9,7 +9,8 @@
     "scheme": "cs321lecturerecorder",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.trentfisher6.cs321lecturerecorder"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +24,9 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
       ],
       "package": "com.trentfisher6.cs321lecturerecorder"
     },
