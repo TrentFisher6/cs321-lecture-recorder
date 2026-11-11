@@ -39,6 +39,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      course_members: {
+        Row: {
+          course_id: string
+          email: string
+          invited_by: string
+        }
+        Insert: {
+          course_id: string
+          email: string
+          invited_by?: string
+        }
+        Update: {
+          course_id?: string
+          email?: string
+          invited_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_members_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           id: string
@@ -59,6 +92,42 @@ export type Database = {
           {
             foreignKeyName: "courses_owner_id_fkey"
             columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_reviews: {
+        Row: {
+          due_at: string
+          flashcard_id: string
+          interval_days: number
+          student_id: string
+        }
+        Insert: {
+          due_at?: string
+          flashcard_id: string
+          interval_days?: number
+          student_id?: string
+        }
+        Update: {
+          due_at?: string
+          flashcard_id?: string
+          interval_days?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_reviews_flashcard_id_fkey"
+            columns: ["flashcard_id"]
+            isOneToOne: false
+            referencedRelation: "flashcards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcard_reviews_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -201,34 +270,27 @@ export type Database = {
           created_by: string
           id: string
           remind_at: string
-          student_id: string
+          student_email: string
           title: string
         }
         Insert: {
-          created_by: string
+          created_by?: string
           id?: string
           remind_at: string
-          student_id: string
+          student_email: string
           title: string
         }
         Update: {
           created_by?: string
           id?: string
           remind_at?: string
-          student_id?: string
+          student_email?: string
           title?: string
         }
         Relationships: [
           {
             foreignKeyName: "reminders_created_by_fkey"
             columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "reminders_student_id_fkey"
-            columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
