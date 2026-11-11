@@ -1,3 +1,4 @@
+import { Colors } from '@/constants/theme';
 import { SessionProvider, useSession } from '@/ctx';
 import { SplashScreenController } from '@/splash';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
@@ -24,9 +25,15 @@ export default function TabLayout() {
 function RootNavigator() {
   const { session } = useSession();
   return (
-    <Stack>
+    // GMU Green header (#006633)
+    // From https://reactnavigation.org/docs/headers#adjusting-header-styles -Trent
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: Colors.light.primary },
+        headerTintColor: Colors.light.onPrimary,
+      }}>
       <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(app)" />
+        <Stack.Screen name="(app)" options={{ title: 'CS 321 Lecture Recorder' }} />
         {/* The course name is passed in when the course is opened (see the Courses screen) 
         fallback to "Course" on error */}
         <Stack.Screen name="course/[id]" options={({ route }) => ({ title: (route.params as { name?: string })?.name ?? 'Course' })} />
