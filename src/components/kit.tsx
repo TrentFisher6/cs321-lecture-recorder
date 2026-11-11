@@ -181,6 +181,118 @@ export function Button({
   );
 }
 
+/**
+ * Round icon-only button, e.g. "add" in a page header.
+ * `label` is required because there is no visible text. hitSlop grows the touch
+ * area past the 48pt circle for users with less precise taps.
+ */
+export function IconButton({ icon, label, onPress, kind = 'secondary' }: { icon: IconName; label: string; onPress: () => void; kind?: ButtonKind }) {
+  const theme = useTheme();
+  const bg: ThemeColor = kind === 'primary' ? 'primary' : kind === 'danger' ? 'dangerSoft' : 'backgroundSelected';
+  const fg: ThemeColor = kind === 'primary' ? 'onPrimary' : kind === 'danger' ? 'danger' : 'text';
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={8}
+      style={({ pressed }) => [styles.iconButton, { backgroundColor: theme[bg] }, pressed && styles.pressed]}>
+      <Icon name={icon} size={22} color={fg} />
+    </Pressable>
+  );
+}
+
+
+// Badges show status. Color is never the only signal: always include a text label,
+// for color-blind users and screen readers.
+type Tone = 'neutral' | 'success' | 'warning' | 'danger' | 'primary';
+
+export function Badge({ label, tone = 'neutral', icon }: { label: string; tone?: Tone; icon?: IconName }) {
+  const theme = useTheme();
+  const map: Record<Tone, [ThemeColor, ThemeColor]> = {
+    neutral: ['backgroundSelected', 'textSecondary'],
+    success: ['successSoft', 'success'],
+    warning: ['warningSoft', 'warning'],
+    danger: ['dangerSoft', 'danger'],
+    primary: ['primarySoft', 'primary'],
+  };
+  const [bg, fg] = map[tone];
+  return (
+    <View style={[styles.badge, { backgroundColor: theme[bg] }]}>
+      {icon ? <Icon name={icon} size={14} color={fg} /> : null}
+      <T variant="caption" color={fg} style={{ fontWeight: '700' }}>
+        {label}
+      </T>
+    </View>
+  );
+}
+
+// accessibilityRole="header" lets screen-reader users jump between sections.
+export function Section({ title, action, children }: PropsWithChildren<{ title: string; action?: ReactNode }>) {
+  return (
+    <View style={{ gap: Spacing.two }}>
+      <View style={styles.sectionHeader}>
+        <T variant="heading" accessibilityRole="header" style={{ flex: 1 }}>
+          {title}
+        </T>
+        {action}
+      </View>
+      {children}
+    </View>
+  );
+}
+
+// Every list needs an empty state. The message should say what will appear and
+// when, e.g. "Notes show up here after your support staff checks them".
+export function EmptyState({ icon, title, message }: { icon: IconName; title: string; message: string }) {
+  return (
+    <Card style={{ alignItems: 'center', gap: Spacing.two, paddingVertical: Spacing.five }}>
+      <Icon name={icon} size={36} color="textSecondary" />
+      <T variant="bodyBold">{title}</T>
+      <T color="textSecondary" style={{ textAlign: 'center' }}>
+        {message}
+      </T>
+    </Card>
+  );
+}
+
+/**
+ * Two-to-four option switcher, e.g. Notes / Transcript / Study plan.
+ * Controlled component: the parent owns `value` and changes it in `onChange`.
+ * The generic K makes TypeScript reject a value that is not one of the options.
+ * Past four options the labels get cramped, so use a list or separate screens.
+ */
+export function Segmented<K extends string>({
+  options,
+  value,
+  onChange,
+}: {
+  options: { key: K; label: string }[];
+  value: K;
+  onChange: (key: K) => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View style={[styles.segmented, { backgroundColor: theme.backgroundElement }]} accessibilityRole="tablist">
+      {options.map((o) => {
+        const selected = o.key === value;
+        return (
+          <Pressable
+            key={o.key}
+            onPress={() => onChange(o.key)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+            style={[styles.segment, selected && { backgroundColor: theme.primary }]}>
+            <T variant="bodyBold" color={selected ? 'onPrimary' : 'text'}>
+              {o.label}
+            </T>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // CONSTANTS
 // One shared icon map keeps the same meaning on the same icon across screens.
 // `satisfies` type-checks every entry while keeping the exact keys for autocomplete.
