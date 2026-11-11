@@ -26,6 +26,11 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="rectangle.on.rectangle" md="style" />
       </NativeTabs.Trigger>
 
+      <NativeTabs.Trigger name="reminders">
+        <NativeTabs.Trigger.Label>Reminders</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="bell" md="notifications" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>API tests</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon

@@ -27,6 +27,9 @@ export default function AppTabs() {
           <TabTrigger name="flashcards" href="/flashcards" asChild>
             <TabButton>Review</TabButton>
           </TabTrigger>
+          <TabTrigger name="reminders" href="/reminders" asChild>
+            <TabButton>Reminders</TabButton>
+          </TabTrigger>
           <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>API tests</TabButton>
           </TabTrigger>
