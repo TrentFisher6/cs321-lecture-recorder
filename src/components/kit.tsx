@@ -9,6 +9,7 @@
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { type PropsWithChildren, type ReactNode } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -290,6 +291,68 @@ export function Segmented<K extends string>({
         );
       })}
     </View>
+  );
+}
+
+
+// Chips are for picking from a few preset choices. They are easier than typing or a
+// date picker. Selection is shown three ways (border, fill, checkmark), not color alone.
+export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected }}
+      style={({ pressed }) => [
+        styles.chip,
+        { borderColor: selected ? theme.primary : theme.border, backgroundColor: selected ? theme.primarySoft : theme.background },
+        pressed && styles.pressed,
+      ]}>
+      {selected ? <Icon name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={16} color="primary" /> : null}
+      <T variant="bodyBold" color={selected ? 'primary' : 'text'}>
+        {label}
+      </T>
+    </Pressable>
+  );
+}
+
+// The whole row is the touch target, not just the small box. accessibilityRole
+// "checkbox" plus accessibilityState makes screen readers say "checked"/"not checked".
+export function Checkbox({ label, checked, onPress }: { label: string; checked: boolean; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      style={({ pressed }) => [styles.checkRow, pressed && styles.pressed]}>
+      <View
+        style={[
+          styles.checkBox,
+          { borderColor: checked ? theme.success : theme.textSecondary, backgroundColor: checked ? theme.success : 'transparent' },
+        ]}>
+        {checked ? <Icon name={{ ios: 'checkmark', android: 'check', web: 'check' }} size={18} color="onPrimary" /> : null}
+      </View>
+      <T style={[{ flex: 1 }, checked && { textDecorationLine: 'line-through', opacity: 0.6 }]}>{label}</T>
+    </Pressable>
+  );
+}
+
+
+/**
+ * Story 10 will read `text` aloud with text-to-speech. Placement is final; behavior is a placeholder.
+ * When implementing: stop any speech already playing before starting new speech,
+ * stop speech when the screen unmounts, and let the button toggle to "Stop".
+ */
+export function ReadAloudButton({ text: _text }: { text: string }) {
+  return (
+    <Button
+      kind="secondary"
+      icon={{ ios: 'speaker.wave.2.fill', android: 'volume_up', web: 'volume_up' }}
+      label="Read aloud"
+      onPress={() => Alert.alert('Read aloud', 'Text-to-speech is coming in story 10.')}
+    />
   );
 }
 
