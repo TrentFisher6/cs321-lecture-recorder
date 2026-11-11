@@ -20,6 +20,12 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
+      {/* System icons from https://docs.expo.dev/router/advanced/native-tabs/ -Trent */}
+      <NativeTabs.Trigger name="flashcards">
+        <NativeTabs.Trigger.Label>Review</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon sf="rectangle.on.rectangle" md="style" />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="explore">
         <NativeTabs.Trigger.Label>API tests</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
