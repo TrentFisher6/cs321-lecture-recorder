@@ -61,4 +61,4 @@ Screens should get data through functions in `src/lib/api.ts` instead of calling
 | Flashcards | Spaced repetition: if the student answers got it, its a 1 day wait. If they answer again it's reset to one day |
 | Read aloud | TTS button on lecture notes, flashcards, and reminders |
 
-Everything is on the API tests tab for now.
+Screens: Courses, Review (flashcards), and Reminders tabs, plus Course and Lecture screens

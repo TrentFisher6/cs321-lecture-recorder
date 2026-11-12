@@ -12,7 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { listLectures, myRole, processLecture, uploadLecture, type Lecture } from '@/lib/api';
 
 // Sample lecture for testing without recording
-const TEST_AUDIO = require('@/assets/audio/test-lecture.m4a');
+const TEST_AUDIO = __DEV__ ? require('@/assets/audio/test-lecture.m4a') : null;
 
 // What each lecture status means to the user
 const STATUS_TEXT: Record<string, string> = {

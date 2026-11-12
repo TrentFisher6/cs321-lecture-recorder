@@ -31,13 +31,6 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Icon sf="bell" md="notifications" />
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>API tests</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }

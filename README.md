@@ -74,3 +74,15 @@ npm run db:types
 ```
 
 API keys (Claude, Deepgram) are stored as Supabase secrets. Don't put them in `.env` or commit them.
+
+## Releasing to the Play Store (internal testing)
+
+Needs the Play service account key at `credentials/play-service-account.json` (ask Trent, it's not in git).
+
+```
+npx eas-cli build --platform android --profile production
+npx eas-cli submit --platform android --profile production --latest
+```
+
+The build runs on Expo's server. Submit uploads it to the internal testing track.
+Based on https://docs.expo.dev/submit/android/ -Trent
