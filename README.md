@@ -16,12 +16,19 @@ npm install
 
 ## Running the app
 
-1. Download Expo Go on your phone and make an Expo account
-2. Log in on your laptop with `npx expo login` (same account as the phone)
-3. Run `npx expo start` and scan the QR code
-4. If it doesn't connect, try `npx expo start --tunnel`
+The app uses a development build, not Expo Go, because it needs native features like background recording.
 
-Screens are in `src/app/`. The app reloads when you save.
+Android (phone plugged in with USB debugging on, Android Studio installed):
+
+```
+npx expo run:android
+```
+
+This builds and installs the app, then starts the dev server. After that, `npx expo start` is enough and the app reloads when you save. Only run `npx expo run:android` again after adding a native package or changing `app.json`.
+
+iPhone simulator (Mac with Xcode): `npx expo run:ios`
+
+Screens are in `src/app/`. On the sign in screen there are debug buttons that log in as the demo student and demo staff accounts.
 
 ## Making changes
 
@@ -32,6 +39,15 @@ git checkout main
 git pull
 git checkout -b story-5
 ```
+
+Run these before submitting a PR. CI will block merging on failing tests
+
+```
+npm run lint
+npm test
+```
+
+Put unit tests in a `__tests__` folder next to the code and end in `-test.ts` like `src/lib/__tests__/spaced-repetition-test.ts`.
 
 ## Supabase
 
