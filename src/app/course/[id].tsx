@@ -1,44 +1,40 @@
-// Course screen. Lists the course's lectures. Staff can record a new lecture here
+// Course screen. Lists the course's lectures. Staff can record a new lecture and invite students here
 import { Asset } from 'expo-asset';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Button, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { Button, Card, EmptyState, icons, Input, Screen, Section, T } from '@/components/kit';
+import { LectureRow } from '@/components/lecture-row';
 import VoiceRecorder from '@/components/voice-recorder';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import { listLectures, myRole, processLecture, uploadLecture, type Lecture } from '@/lib/api';
+import { useSession } from '@/ctx';
+import { inviteStudent, listLectures, processLecture, uploadLecture, type Lecture } from '@/lib/api';
 
 // Sample lecture for testing without recording
 const TEST_AUDIO = __DEV__ ? require('@/assets/audio/test-lecture.m4a') : null;
 
-// What each lecture status means to the user
-const STATUS_TEXT: Record<string, string> = {
-  uploaded: 'Uploaded',
-  processing: 'Processing...',
-  ready: 'Ready',
-  error: 'Something went wrong',
-};
-
 export default function CourseScreen() {
   // Route params from https://docs.expo.dev/router/reference/url-parameters/ -Trent
   const { id } = useLocalSearchParams<{ id: string }>();
-  const theme = useTheme();
-  const [role, setRole] = useState<string | null>(null);
+  const { role } = useSession();
   const [lectures, setLectures] = useState<Lecture[]>([]);
+  const [loaded, setLoaded] = useState(false);
   const [title, setTitle] = useState('');
   const [recording, setRecording] = useState(false);
   const [status, setStatus] = useState('');
+  const [email, setEmail] = useState('');
+  const [inviteStatus, setInviteStatus] = useState('');
 
-  // Load the role and this course's lectures when the screen opens, and again when coming closing
-  // a lecture (needed because thr status might have changed or it may have been edited).
+  // Load this course's lectures when the screen opens, and again when coming back from
+  // a lecture (needed because the status might have changed or it may have been edited).
   // From https://docs.expo.dev/router/reference/hooks/#usefocuseffect -Trent
   useFocusEffect(
     useCallback(() => {
-      myRole().then(setRole);
-      listLectures(id).then(setLectures);
+      listLectures(id)
+        .then((l) => {
+          setLectures(l);
+          setLoaded(true);
+        })
+        .catch((e) => setStatus('Could not load lectures: ' + (e as Error).message));
     }, [id]),
   );
 
@@ -65,21 +61,26 @@ export default function CourseScreen() {
     addLecture(asset.localUri!);
   }
 
+  async function invite() {
+    const address = email.trim();
+    if (!address) return;
+    try {
+      await inviteStudent(id, address);
+      setEmail('');
+      setInviteStatus(`Invited ${address}`);
+    } catch (e) {
+      setInviteStatus('Could not invite: ' + (e as Error).message);
+    }
+  }
+
   const isStaff = role === 'staff';
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {isStaff && (
-          <ThemedView type="backgroundElement" style={styles.card}>
-            <ThemedText type="smallBold">New lecture</ThemedText>
-            <TextInput
-              style={[styles.input, { borderColor: theme.border, color: theme.text }]}
-              placeholder="Title (optional)"
-              placeholderTextColor={theme.textSecondary}
-              value={title}
-              onChangeText={setTitle}
-            />
+    <Screen>
+      {isStaff && (
+        <Section title="New lecture">
+          <Card>
+            <Input label="Title (optional)" placeholder="Memory and learning" value={title} onChangeText={setTitle} />
             {recording ? (
               <VoiceRecorder
                 onSaved={(uri) => {
@@ -88,45 +89,55 @@ export default function CourseScreen() {
                 }}
               />
             ) : (
-              <View style={styles.row}>
-                <Button title="Record lecture" color={theme.primary} onPress={() => setRecording(true)} />
-                  {/*In the dev build only, show a button to upload a test lecture */}
-                {__DEV__ && <Button title="Upload test audio" color={theme.primary} onPress={uploadTestAudio} />}
-              </View>
+              <>
+                <Button icon={icons.mic} label="Record lecture" onPress={() => setRecording(true)} />
+                {/* In the dev build only, show a button to upload a test lecture */}
+                {__DEV__ && <Button kind="secondary" label="Upload test audio" onPress={uploadTestAudio} />}
+              </>
             )}
-            {!!status && <ThemedText type="small">{status}</ThemedText>}
-          </ThemedView>
-        )}
+            {/* accessibilityLiveRegion makes Android screen readers announce upload progress */}
+            {!!status && (
+              <T color="textSecondary" accessibilityLiveRegion="polite">
+                {status}
+              </T>
+            )}
+          </Card>
+        </Section>
+      )}
 
-        <ThemedText type="smallBold">Lectures</ThemedText>
-        {lectures.map((lecture) => (
-          <Pressable
-            key={lecture.id}
-            onPress={() => router.push({ pathname: '/lecture/[id]', params: { id: lecture.id, name: lecture.title ?? 'Lecture' } })}>
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">{lecture.title}</ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {lecture.date ? new Date(lecture.date).toLocaleDateString() : ''} · {STATUS_TEXT[lecture.status ?? ''] ?? lecture.status}
-                {isStaff ? (lecture.verified ? ' · Verified' : ' · Not verified') : ''}
-              </ThemedText>
-            </ThemedView>
-          </Pressable>
+      <Section title="Lectures">
+        {loaded && lectures.length === 0 ? (
+          <EmptyState
+            icon={icons.mic}
+            title="No lectures yet"
+            message={isStaff ? 'Record one above.' : 'Check back after class.'}
+          />
+        ) : null}
+        {lectures.map((l) => (
+          <LectureRow key={l.id} lecture={l} showStatus={isStaff} />
         ))}
+        {!isStaff && !!status && <T color="danger">{status}</T>}
+      </Section>
 
-        {role && lectures.length === 0 && (
-          <ThemedText themeColor="textSecondary">
-            {isStaff ? 'No lectures yet. Record one above.' : 'No lectures yet. Check back after class.'}
-          </ThemedText>
-        )}
-      </ScrollView>
-    </ThemedView>
+      {isStaff && (
+        <Section title="Students">
+          <Card>
+            {/* The student does not need an account yet. They see the course once they sign up with this email */}
+            <Input
+              label="Invite a student"
+              placeholder="student@gmu.edu"
+              autoCapitalize="none"
+              autoComplete="email"
+              keyboardType="email-address"
+              value={email}
+              onChangeText={setEmail}
+              onSubmitEditing={invite}
+            />
+            <Button kind="secondary" label="Send invite" onPress={invite} disabled={!email.trim()} />
+            {!!inviteStatus && <T color="textSecondary">{inviteStatus}</T>}
+          </Card>
+        </Section>
+      )}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  content: { padding: Spacing.four, gap: Spacing.three, width: '100%', maxWidth: MaxContentWidth },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  input: { borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.two },
-  card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.two },
-});
