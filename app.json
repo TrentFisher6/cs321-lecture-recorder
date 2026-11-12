@@ -7,9 +7,10 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "cs321lecturerecorder",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.trentfisher6.cs321lecturerecorder"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,8 +24,11 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ]
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.FOREGROUND_SERVICE_MICROPHONE"
+      ],
+      "package": "com.trentfisher6.cs321lecturerecorder"
     },
     "web": {
       "output": "static",
@@ -43,10 +47,12 @@
       [
         "expo-audio",
         {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to record audio."
+          "microphonePermission": "Allow $(PRODUCT_NAME) to record audio.",
+          "enableBackgroundRecording": true
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
