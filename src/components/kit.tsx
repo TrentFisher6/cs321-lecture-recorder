@@ -1,23 +1,34 @@
 // Shared building blocks for the app screens.
-// Design rules: large readable text with large touch targets
-// Focused on using plain words and set an accessibility control
+// Design rules: large readable text, 56pt touch targets, one clear action per card,
+// plain words, and an accessibility label on every control.
 //
-//
-// - Everything should build from here, so we can change the look of the whole app in one place.
-// 
+// Best practices:
+// - Screens should build from these pieces instead of raw Text/View/Pressable with
+//   their own styles. One change here then updates the whole app, and text size,
+//   spacing, and contrast stay consistent for students who rely on them.
+// - Use theme color names (ThemeColor), never hex codes, so dark mode keeps working.
+// - Use spacing from `Spacing` instead of raw numbers, for the same reason.
+// - Keep these components presentational: props in, callbacks out. No data
+//   fetching or app state in this file. (ReadAloudButton is the one exception: it
+//   owns the phone's text-to-speech, which is device behavior, not app data.)
+// - If this file grows past a few hundred more lines, split it into
+//   components/ui/ with one component per file and an index.ts to re-export them.
 
+import { setAudioModeAsync } from 'expo-audio';
+import * as Speech from 'expo-speech';
 import { SymbolView, type SymbolViewProps } from 'expo-symbols';
-import { type PropsWithChildren, type ReactNode } from 'react';
+import { useEffect, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
   type StyleProp,
+  type TextInputProps,
   type TextProps,
-  type ViewStyle
+  type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -49,9 +60,12 @@ export function T({ variant = 'body', color = 'text', style, ...rest }: TextProp
 }
 
 /**
- * Page wrapper.
+ * Page wrapper. `tab` screens draw their own big title; pushed screens use the stack header.
  * It handles safe areas (notch, home bar) so screens do not have to.
- * For long or growing lists will need to readjust
+ * `footer` stays pinned below the scroll area. Use it for the screen's main action,
+ * so the action is always reachable without scrolling.
+ * For long or growing lists (hundreds of rows), use a FlatList instead: ScrollView
+ * renders every child at once.
  */
 export function Screen({
   title,
@@ -64,8 +78,11 @@ export function Screen({
   const theme = useTheme();
   return (
     <SafeAreaView edges={tab ? ['top'] : ['bottom']} style={{ flex: 1, backgroundColor: theme.background }}>
+      {/* "handled" lets buttons work while the keyboard is open, for screens with forms.
+          From https://reactnative.dev/docs/scrollview#keyboardshouldpersisttaps */}
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={[styles.scroll, { paddingBottom: (tab ? BottomTabInset : 0) + Spacing.five }]}>
         {title ? (
           <View style={styles.pageHeader}>
@@ -167,7 +184,11 @@ export function Button({
       ]}>
       {icon ? <Icon name={icon} size={big ? 28 : 22} color={fg} /> : null}
       {/* Android bug workaround: a label sized to its own measured width can come
-          out a fraction of a pixel too narrow after rounding.*/}
+          out a fraction of a pixel too narrow after rounding. Android then wraps
+          the last word onto a hidden second line ("As staff" showed as "As").
+          Stretching the label across the button (flexGrow) and centering the text
+          gives it spare room, so no word gets pushed off. Labels stay on one line
+          and shrink slightly if they truly do not fit. */}
       <T
         variant={big ? 'heading' : 'bodyBold'}
         color={fg}
@@ -203,6 +224,29 @@ export function IconButton({ icon, label, onPress, kind = 'secondary' }: { icon:
   );
 }
 
+/**
+ * Text field with an optional visible label above it. The label also becomes the
+ * accessibility label, so screen readers say what the field is for. 18pt text and a
+ * 56pt height match the buttons.
+ */
+export function Input({ label, style, ...rest }: TextInputProps & { label?: string }) {
+  const theme = useTheme();
+  const field = (
+    <TextInput
+      placeholderTextColor={theme.textSecondary}
+      accessibilityLabel={label ?? rest.placeholder}
+      {...rest}
+      style={[styles.input, { borderColor: theme.border, color: theme.text, backgroundColor: theme.backgroundElement }, style]}
+    />
+  );
+  if (!label) return field;
+  return (
+    <View style={{ gap: Spacing.one }}>
+      <T variant="bodyBold">{label}</T>
+      {field}
+    </View>
+  );
+}
 
 // Badges show status. Color is never the only signal: always include a text label,
 // for color-blind users and screen readers.
@@ -294,7 +338,6 @@ export function Segmented<K extends string>({
   );
 }
 
-
 // Chips are for picking from a few preset choices. They are easier than typing or a
 // date picker. Selection is shown three ways (border, fill, checkmark), not color alone.
 export function Chip({ label, selected, onPress }: { label: string; selected?: boolean; onPress: () => void }) {
@@ -339,24 +382,39 @@ export function Checkbox({ label, checked, onPress }: { label: string; checked: 
   );
 }
 
-
 /**
- * Story 10 will read `text` aloud with text-to-speech. Placement is final; behavior is a placeholder.
- * When implementing: stop any speech already playing before starting new speech,
- * stop speech when the screen unmounts, and let the button toggle to "Stop".
+ * Story 10: reads `text` out loud, for students who find reading hard. Tap again to stop.
+ * Speech logic is from components/read-aloud.tsx (Trent), based on
+ * https://docs.expo.dev/versions/v57.0.0/sdk/speech/
+ * - Stops speech already playing (from another button) before starting new speech.
+ * - Stops when the screen closes or the text changes (e.g. a flashcard flips).
+ * - Plays even when the phone is on silent.
  */
-export function ReadAloudButton({ text: _text }: { text: string }) {
+export function ReadAloudButton({ text }: { text: string }) {
+  const [speaking, setSpeaking] = useState(false);
+
+  // The cleanup runs on unmount and whenever `text` changes
+  useEffect(() => () => void Speech.stop(), [text]);
+
+  function toggle() {
+    Speech.stop();
+    if (speaking) return; // onStopped sets speaking back to false
+    setSpeaking(true);
+    setAudioModeAsync({ playsInSilentMode: true });
+    const done = () => setSpeaking(false);
+    Speech.speak(text, { onDone: done, onStopped: done, onError: done });
+  }
+
   return (
     <Button
       kind="secondary"
-      icon={{ ios: 'speaker.wave.2.fill', android: 'volume_up', web: 'volume_up' }}
-      label="Read aloud"
-      onPress={() => Alert.alert('Read aloud', 'Text-to-speech is coming in story 10.')}
+      icon={speaking ? icons.stop : icons.speaker}
+      label={speaking ? 'Stop reading' : 'Read aloud'}
+      onPress={toggle}
     />
   );
 }
 
-// CONSTANTS
 // One shared icon map keeps the same meaning on the same icon across screens.
 // `satisfies` type-checks every entry while keeping the exact keys for autocomplete.
 export const icons = {
@@ -376,9 +434,11 @@ export const icons = {
   person: { ios: 'person.fill', android: 'person', web: 'person' },
   warning: { ios: 'exclamationmark.triangle.fill', android: 'warning', web: 'warning' },
   sparkles: { ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' },
+  speaker: { ios: 'speaker.wave.2.fill', android: 'volume_up', web: 'volume_up' },
+  school: { ios: 'graduationcap.fill', android: 'school', web: 'school' },
 } satisfies Record<string, IconName>;
 
-
+// StyleSheet.create at module level builds styles once, not on every render.
 // Body text is 18pt (above the usual 16pt) for readability.
 const text = StyleSheet.create({
   display: { fontSize: 56, lineHeight: 64, fontWeight: '700', fontVariant: ['tabular-nums'] },
@@ -436,4 +496,5 @@ const styles = StyleSheet.create({
   },
   checkRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.three, minHeight: 56 },
   checkBox: { width: 32, height: 32, borderRadius: 8, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  input: { minHeight: 56, borderWidth: 1, borderRadius: 14, paddingHorizontal: Spacing.three, fontSize: 18 },
 });
