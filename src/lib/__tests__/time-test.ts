@@ -1,5 +1,41 @@
 // Unit tests for the recording timer and reminder time parsing
-import { formatDuration, parseReminderTime } from '../time';
+import { formatDate, formatDayTime, formatDuration, parseDateOnly, parseReminderTime } from '../time';
+
+describe('parseDateOnly', () => {
+  it('reads a database date as a local date, not UTC', () => {
+    expect(parseDateOnly('2026-11-20')).toEqual(new Date(2026, 10, 20));
+  });
+
+  it('returns null for anything not a date', () => {
+    expect(parseDateOnly('soon')).toBeNull();
+  });
+});
+
+describe('formatDate', () => {
+  it('returns empty text when there is no date', () => {
+    expect(formatDate(null)).toBe('');
+  });
+
+  it('keeps the same calendar day', () => {
+    expect(formatDate('2026-11-20')).toContain('20');
+  });
+});
+
+describe('formatDayTime', () => {
+  const now = new Date(2026, 10, 11, 9, 0);
+
+  it('says Today for later today', () => {
+    expect(formatDayTime(new Date(2026, 10, 11, 19, 0).toISOString(), now)).toMatch(/^Today, /);
+  });
+
+  it('says Tomorrow for tomorrow', () => {
+    expect(formatDayTime(new Date(2026, 10, 12, 16, 0).toISOString(), now)).toMatch(/^Tomorrow, /);
+  });
+
+  it('names the day for later dates', () => {
+    expect(formatDayTime(new Date(2026, 10, 14, 10, 0).toISOString(), now)).not.toMatch(/^(Today|Tomorrow)/);
+  });
+});
 
 describe('formatDuration', () => {
   it('shows zero as 00:00', () => {
