@@ -33,7 +33,7 @@ function RootNavigator() {
         headerTintColor: Colors.light.onPrimary,
       }}>
       <Stack.Protected guard={!!session}>
-        <Stack.Screen name="(app)" options={{ title: 'CS 321 Lecture Recorder' }} />
+        <Stack.Screen name="(app)" options={{ title: 'Patriot Recall' }} />
         {/* The course name is passed in when the course is opened (see the Courses screen) 
         fallback to "Course" on error */}
         <Stack.Screen name="course/[id]" options={({ route }) => ({ title: (route.params as { name?: string })?.name ?? 'Course' })} />

@@ -1,4 +1,4 @@
-# CS321 Lecture Recorder
+# Patriot Recall (CS321 Lecture Recorder)
 
 Team 10 project for CS 321. Records lectures and turns them into transcripts, notes, and flashcards. Built with Expo and Supabase.
 
