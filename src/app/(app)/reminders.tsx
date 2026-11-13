@@ -1,148 +1,112 @@
-// Reminders tab. Students see their upcoming reminders and staff can create reminders for their students by email
-import { useFocusEffect } from 'expo-router';
+// Story 8: Reminders tab. Students see their upcoming reminders. Staff make reminders for
+// their students (by email) and can delete them.
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Button, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, View } from 'react-native';
 
-import ReadAloud from '@/components/read-aloud';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
-import {
-  createReminder,
-  deleteReminder,
-  listInvitedStudents,
-  listReminders,
-  myRole,
-  type Reminder,
-} from '@/lib/api';
-import { parseReminderTime } from '@/lib/time';
+import { Card, EmptyState, Icon, IconButton, icons, ReadAloudButton, Screen, Section, T } from '@/components/kit';
+import { Spacing } from '@/constants/theme';
+import { useSession } from '@/ctx';
+import { deleteReminder, listReminders, type Reminder } from '@/lib/api';
+import { formatDayTime } from '@/lib/time';
 
+// Best practices:
+// - Store times as ISO timestamps (timestamptz in the database) and format them
+//   only for display. That keeps time zones correct across devices.
+// - The database decides who can see or delete a reminder (row-level security):
+//   staff manage reminders they made, students can only read theirs. The role
+//   checks here only shape the UI to match.
+// - When notifications are added, schedule and cancel them in the same place
+//   reminders are added and removed, so the two never get out of sync.
 export default function RemindersScreen() {
-  const theme = useTheme();
-  const [role, setRole] = useState<string | null>(null);
+  const { role } = useSession();
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [students, setStudents] = useState<string[]>([]);
-  const [studentEmail, setStudentEmail] = useState('');
-  const [title, setTitle] = useState('');
-  const [when, setWhen] = useState('');
+  const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState('');
+  const staff = role === 'staff';
 
-  // Reload each time the tab is opened so new students and reminders show up
+  // Reload each time the tab is opened, including when the New reminder form closes
   // From https://docs.expo.dev/router/reference/hooks/#usefocuseffect -Trent
-  useFocusEffect(
-    useCallback(() => {
-      myRole().then(setRole);
-      listReminders().then(setReminders);
-      listInvitedStudents().then(setStudents);
-    }, []),
+  const load = useCallback(() => {
+    listReminders()
+      .then((r) => {
+        setReminders(r);
+        setLoaded(true);
+      })
+      .catch((e) => setStatus('Could not load reminders: ' + (e as Error).message));
+  }, []);
+  useFocusEffect(load);
+
+  // Compare Date objects, not formatted strings. Formatted text depends on locale.
+  // listReminders only returns upcoming reminders, soonest first.
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+  const today = reminders.filter((r) => new Date(r.remind_at) <= endOfToday);
+  const later = reminders.filter((r) => new Date(r.remind_at) > endOfToday);
+
+  // Confirm destructive actions and mark the button 'destructive' so iOS shows it
+  // in red. There is no undo yet.
+  const confirmDelete = (r: Reminder) =>
+    Alert.alert('Delete reminder?', r.title, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteReminder(r.id);
+            load();
+          } catch (e) {
+            setStatus('Could not delete: ' + (e as Error).message);
+          }
+        },
+      },
+    ]);
+
+  const row = (r: Reminder) => (
+    <Card key={r.id}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.three }}>
+        <Icon name={icons.bell} size={26} color="warning" />
+        <View style={{ flex: 1, gap: 2 }}>
+          <T variant="bodyBold">{r.title}</T>
+          <T color="textSecondary">{formatDayTime(r.remind_at)}</T>
+          {staff ? (
+            <T variant="caption" color="textSecondary">
+              For {r.student_email}
+            </T>
+          ) : null}
+        </View>
+        {/* Icon-only buttons need a label that names the item, so a screen reader
+            says "Delete Practice flashcards" rather than just "button". */}
+        {staff ? <IconButton icon={icons.trash} kind="danger" label={`Delete ${r.title}`} onPress={() => confirmDelete(r)} /> : null}
+      </View>
+    </Card>
   );
-
-  async function add() {
-    const remindAt = parseReminderTime(when);
-    if (!studentEmail || !title.trim() || !remindAt) {
-      setStatus('Set a student and title, and use a time like 2026-11-20 14:00');
-      return;
-    }
-    try {
-      await createReminder(studentEmail, title.trim(), remindAt);
-      setTitle('');
-      setWhen('');
-      setStatus('Reminder added');
-      setReminders(await listReminders());
-    } catch (e) {
-      setStatus('Failed: ' + (e as Error).message);
-    }
-  }
-
-  async function remove(id: string) {
-    try {
-      await deleteReminder(id);
-      setReminders(await listReminders());
-    } catch (e) {
-      setStatus('Failed: ' + (e as Error).message);
-    }
-  }
-
-  const isStaff = role === 'staff';
-  const inputStyle = [styles.input, { borderColor: theme.border, color: theme.text }];
 
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea} edges={['top']}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <ThemedText type="subtitle">Reminders</ThemedText>
+    <Screen
+      tab
+      title="Reminders"
+      subtitle={staff ? 'Reminders for your students.' : 'Things to do, and when.'}
+      // reminder-new is registered as a modal in the root layout
+      right={
+        staff ? <IconButton icon={icons.plus} kind="primary" label="New reminder" onPress={() => router.push('/reminder-new')} /> : null
+      }>
+      {!!status && <T color="danger">{status}</T>}
 
-          {isStaff && (
-            <ThemedView type="backgroundElement" style={styles.card}>
-              <ThemedText type="smallBold">New reminder</ThemedText>
-              {/* Tap a student to pick them */}
-              <View style={styles.row}>
-                {students.map((email) => (
-                  <Pressable key={email} onPress={() => setStudentEmail(email)}>
-                    <ThemedView type={email === studentEmail ? 'primarySoft' : 'background'} style={styles.chip}>
-                      <ThemedText type="small" themeColor={email === studentEmail ? 'primary' : 'text'}>
-                        {email}
-                      </ThemedText>
-                    </ThemedView>
-                  </Pressable>
-                ))}
-              </View>
-              <TextInput
-                style={inputStyle}
-                placeholder="Reminder title"
-                placeholderTextColor={theme.textSecondary}
-                value={title}
-                onChangeText={setTitle}
-              />
-              <TextInput
-                style={inputStyle}
-                placeholder="A date  like 2026-11-20 14:00"
-                placeholderTextColor={theme.textSecondary}
-                value={when}
-                onChangeText={setWhen}
-              />
-              <Button title="Add reminder" color={theme.primary} onPress={add} />
-              {!!status && <ThemedText type="small">{status}</ThemedText>}
-            </ThemedView>
-          )}
+      {!staff && reminders.length > 0 ? (
+        <ReadAloudButton text={reminders.map((r) => `${formatDayTime(r.remind_at)}: ${r.title}.`).join(' ')} />
+      ) : null}
 
-          <ThemedText type="smallBold">Upcoming</ThemedText>
-          {reminders.length > 0 && (
-            <ReadAloud
-              text={reminders.map((r) => `${new Date(r.remind_at).toLocaleString()}: ${r.title}.`).join(' ')}
-            />
-          )}
-          {reminders.map((reminder) => (
-            <ThemedView key={reminder.id} type="backgroundElement" style={[styles.card, styles.reminder]}>
-              <View style={styles.grow}>
-                <ThemedText type="smallBold">{reminder.title}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  {new Date(reminder.remind_at).toLocaleString()}
-                  {isStaff ? ` · ${reminder.student_email}` : ''}
-                </ThemedText>
-              </View>
-              {isStaff && <Button title="Delete" color={theme.danger} onPress={() => remove(reminder.id)} />}
-            </ThemedView>
-          ))}
-          {role && reminders.length === 0 && (
-            <ThemedText themeColor="textSecondary">No upcoming reminders.</ThemedText>
-          )}
-        </ScrollView>
-      </SafeAreaView>
-    </ThemedView>
+      {loaded && reminders.length === 0 ? (
+        <EmptyState
+          icon={icons.bell}
+          title="No reminders"
+          message={staff ? 'Press + to add one for a student.' : 'Your support staff can add reminders for you.'}
+        />
+      ) : null}
+      {today.length ? <Section title="Today">{today.map(row)}</Section> : null}
+      {later.length ? <Section title="Coming up">{later.map(row)}</Section> : null}
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, flexDirection: 'row', justifyContent: 'center' },
-  safeArea: { flex: 1, maxWidth: MaxContentWidth },
-  content: { padding: Spacing.four, gap: Spacing.three, paddingBottom: BottomTabInset + Spacing.three },
-  card: { borderRadius: Spacing.three, padding: Spacing.three, gap: Spacing.two },
-  reminder: { flexDirection: 'row', alignItems: 'center' },
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.two },
-  grow: { flex: 1 },
-  chip: { borderRadius: 999, paddingVertical: Spacing.one, paddingHorizontal: Spacing.three },
-  input: { borderWidth: 1, borderRadius: Spacing.two, padding: Spacing.two },
-});
