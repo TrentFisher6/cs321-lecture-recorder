@@ -5,15 +5,9 @@ import { AudioModule, RecordingPresets, setAudioModeAsync, useAudioRecorder, use
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
-type Status = 'idle' | 'recording' | 'paused';
+import { formatDuration } from '@/lib/time';
 
-// Shows milliseconds as mm:ss
-function formatTime(ms: number) {
-  const total = Math.floor(ms / 1000);
-  const minutes = String(Math.floor(total / 60)).padStart(2, '0');
-  const seconds = String(total % 60).padStart(2, '0');
-  return `${minutes}:${seconds}`;
-}
+type Status = 'idle' | 'recording' | 'paused';
 
 // onSaved gets the local file uri of the finished recording
 export default function VoiceRecorder({ onSaved }: { onSaved: (uri: string) => void }) {
@@ -55,7 +49,7 @@ export default function VoiceRecorder({ onSaved }: { onSaved: (uri: string) => v
 
   return (
     <View style={styles.container}>
-      <Text style={styles.timer}>{formatTime(recorderState.durationMillis)}</Text>
+      <Text style={styles.timer}>{formatDuration(recorderState.durationMillis)}</Text>
       <Text>{status === 'recording' ? '● Recording' : status === 'paused' ? 'Paused' : 'Ready'}</Text>
 
       <View style={styles.row}>

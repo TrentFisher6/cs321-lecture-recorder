@@ -61,4 +61,4 @@ Screens should get data through functions in `src/lib/api.ts` instead of calling
 | Flashcards | Spaced repetition: if the student answers got it, its a 1 day wait. If they answer again it's reset to one day |
 | Read aloud | TTS button on lecture notes, flashcards, and reminders |
 
-Everything is on the API tests tab for now.
+Tabs: Home, Record (staff), Study (students), Reminders, and Profile. Course, Lecture, and New reminder screens open on top. Shared UI parts are in `src/components/kit.tsx`.

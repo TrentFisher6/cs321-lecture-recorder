@@ -1,5 +1,6 @@
 // All backend calls go through here. Screens should not call supabase directly.
 import type { Tables, TablesUpdate } from './database.types';
+import { isDue, nextReview } from './spaced-repetition';
 import { supabase } from './supabase';
 
 export type Course = Tables<'courses'>;
@@ -32,6 +33,14 @@ export async function createLecture(courseId: string, title: string, audio: Arra
   if (upload.error) throw upload.error;
   await supabase.from('lectures').update({ audio_path: path }).eq('id', lecture.id);
   return lecture.id;
+}
+
+// Upload a local test audio file as a lecture
+// Reading the file with fetch is from Supabase's Expo example:
+// https://github.com/supabase/supabase/blob/master/examples/user-management/expo-user-management/components/Avatar.tsx -Trent
+export async function uploadLecture(courseId: string, title: string, audioUri: string) {
+  const audio = await fetch(audioUri).then((res) => res.arrayBuffer());
+  return createLecture(courseId, title, audio);
 }
 
 // Transcribe and summarize on the edge function
@@ -74,8 +83,17 @@ export async function updateLecture(id: string, fields: TablesUpdate<'lectures'>
 
 // Each lecture comes with its flashcards (joined through flashcards.lecture_id)
 // See "Query referenced tables" in https://supabase.com/docs/reference/javascript/select -Trent
-export async function listLectures() {
-  const { data, error } = await supabase.from('lectures').select('*, flashcards(*)').order('date', { ascending: false });
+export async function listLectures(courseId?: string) {
+  let query = supabase.from('lectures').select('*, flashcards(*)').order('date', { ascending: false });
+  if (courseId) query = query.eq('course_id', courseId);
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+// One lecture with flashcards
+export async function getLecture(id: string) {
+  const { data, error } = await supabase.from('lectures').select('*, flashcards(*)').eq('id', id).single();
   if (error) throw error;
   return data;
 }
@@ -85,19 +103,12 @@ export async function listDueFlashcards() {
   const { data, error } = await supabase.from('flashcards').select('*, flashcard_reviews(*)');
   if (error) throw error;
   const now = new Date();
-  return data.filter((card) => {
-    const review = card.flashcard_reviews[0];
-    return !review || new Date(review.due_at) <= now;
-  });
+  return data.filter((card) => isDue(card.flashcard_reviews[0], now));
 }
 
-// Spaced repetition based on the Leitner system (https://en.wikipedia.org/wiki/Leitner_system):
-// "Got it" waits twice as long as last time, "Again" starts over at 1 day -Trent
+// Saves the student's answer. See spaced-repetition.ts
 export async function reviewFlashcard(card: Flashcard, gotIt: boolean) {
-  const review = card.flashcard_reviews[0];
-  const intervalDays = gotIt && review ? review.interval_days * 2 : 1;
-  const dueAt = new Date();
-  dueAt.setDate(dueAt.getDate() + intervalDays);
+  const { intervalDays, dueAt } = nextReview(card.flashcard_reviews[0], gotIt, new Date());
 
   // Upsert makes the review row the first time and updates it after that
   // From https://supabase.com/docs/reference/javascript/upsert -Trent

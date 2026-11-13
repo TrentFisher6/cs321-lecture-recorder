@@ -1,4 +1,4 @@
-# CS321 Lecture Recorder
+# Patriot Recall (CS321 Lecture Recorder)
 
 Team 10 project for CS 321. Records lectures and turns them into transcripts, notes, and flashcards. Built with Expo and Supabase.
 
@@ -40,6 +40,15 @@ git pull
 git checkout -b story-5
 ```
 
+Run these before submitting a PR. CI will block merging on failing tests
+
+```
+npm run lint
+npm test
+```
+
+Put unit tests in a `__tests__` folder next to the code and end in `-test.ts` like `src/lib/__tests__/spaced-repetition-test.ts`.
+
 ## Supabase
 
 Only needed if you're changing the database or the edge function. Ask Trent to add you to the Supabase org first, then:
@@ -65,3 +74,15 @@ npm run db:types
 ```
 
 API keys (Claude, Deepgram) are stored as Supabase secrets. Don't put them in `.env` or commit them.
+
+## Releasing to the Play Store (internal testing)
+
+Needs the Play service account key at `credentials/play-service-account.json` (ask Trent, it's not in git).
+
+```
+npx eas-cli build --platform android --profile production
+npx eas-cli submit --platform android --profile production --latest
+```
+
+The build runs on Expo's server. Submit uploads it to the internal testing track.
+Based on https://docs.expo.dev/submit/android/ -Trent
