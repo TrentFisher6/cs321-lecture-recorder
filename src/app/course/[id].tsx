@@ -9,8 +9,8 @@ import VoiceRecorder from '@/components/voice-recorder';
 import { useSession } from '@/ctx';
 import { inviteStudent, listLectures, processLecture, uploadLecture, type Lecture } from '@/lib/api';
 
-// Sample lecture for testing without recording
-const TEST_AUDIO = __DEV__ ? require('@/assets/audio/test-lecture.m4a') : null;
+// 5 minute sample lecture so staff can try the app without recording a class
+const SAMPLE_AUDIO = require('@/assets/audio/sample-lecture.m4a');
 
 export default function CourseScreen() {
   // Route params from https://docs.expo.dev/router/reference/url-parameters/ -Trent
@@ -55,8 +55,8 @@ export default function CourseScreen() {
     setLectures(await listLectures(id));
   }
 
-  async function uploadTestAudio() {
-    const asset = Asset.fromModule(TEST_AUDIO);
+  async function addSampleLecture() {
+    const asset = Asset.fromModule(SAMPLE_AUDIO);
     await asset.downloadAsync();
     addLecture(asset.localUri!);
   }
@@ -91,8 +91,7 @@ export default function CourseScreen() {
             ) : (
               <>
                 <Button icon={icons.mic} label="Record lecture" onPress={() => setRecording(true)} />
-                {/* In the dev build only, show a button to upload a test lecture */}
-                {__DEV__ && <Button kind="secondary" label="Upload test audio" onPress={uploadTestAudio} />}
+                <Button kind="secondary" label="Use sample lecture" onPress={addSampleLecture} />
               </>
             )}
             {/* accessibilityLiveRegion makes Android screen readers announce upload progress */}
