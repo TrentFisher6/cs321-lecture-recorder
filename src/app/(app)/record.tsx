@@ -19,7 +19,7 @@ type Phase = 'idle' | 'recording' | 'paused' | 'saving';
 // - Model the screen as one `phase` value instead of several booleans
 //   (isRecording, isPaused). Impossible combinations then cannot happen.
 // - We don't only hide the tab here but also use RLS to ensure students cant submit recordings
-// export default function RecordScreen() {
+export default function RecordScreen() {
   const theme = useTheme();
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY); // .m4a file
   const recorderState = useAudioRecorderState(recorder);
