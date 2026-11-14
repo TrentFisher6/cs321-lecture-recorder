@@ -16,6 +16,10 @@ export const supabase = createClient(supabaseUrl, supabasePublishableKey, {
   },
 });
 
+// We temporarily set up a second client to hold the password while we wait for email 2FA
+export const passwordCheck = createClient(supabaseUrl, supabasePublishableKey, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false, storageKey: 'password-check' },
+});
 
 // Taken from https://supabase.com/docs/guides/auth/quickstarts/react-native -Trent
 // Tells Supabase Auth to continuously refresh the session automatically

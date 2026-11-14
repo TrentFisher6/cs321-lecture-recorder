@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
-import { supabase } from '../lib/supabase'
+import { passwordCheck, supabase } from '../lib/supabase'
 
 // Demo accounts for testing. Create them once with the normal sign up flow -Trent
 const DEMO_PASSWORD = 'demo1234'
@@ -12,14 +12,33 @@ export default function Auth() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [choosingRole, setChoosingRole] = useState(false)
+  const [codeSent, setCodeSent] = useState(false)
+  const [code, setCode] = useState('')
 
+  // Email 2fa
+  // Email codes are from https://supabase.com/docs/guides/auth/auth-email-passwordless -Trent
   async function signInWithEmail() {
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password,
-    })
+    const { error } = await passwordCheck.auth.signInWithPassword({ email, password })
+    if (error) {
+      Alert.alert(error.message)
+    } else {
+      // Throw away the password check session, we only needed to know the password was right
+      await passwordCheck.auth.signOut({ scope: 'local' })
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false },
+      })
+      if (otpError) Alert.alert(otpError.message)
+      else setCodeSent(true)
+    }
+    setLoading(false)
+  }
 
+  // Signing in here sets the session, and Stack.Protected switches to the app
+  async function verifyCode() {
+    setLoading(true)
+    const { error } = await supabase.auth.verifyOtp({ email, token: code, type: 'email' })
     if (error) Alert.alert(error.message)
     setLoading(false)
   }
@@ -50,6 +69,38 @@ export default function Auth() {
     if (error) Alert.alert(error.message)
     if (!session) Alert.alert('Please check your inbox for email verification!')
     setLoading(false)
+  }
+
+  if (codeSent) {
+    return (
+      <View style={styles.container}>
+        <View style={[styles.verticallySpaced, styles.mt20]}>
+          <Text style={styles.label}>Enter the code we emailed to {email}</Text>
+          <TextInput
+            onChangeText={setCode}
+            value={code}
+            placeholder="123456"
+            keyboardType="number-pad"
+            autoComplete="one-time-code"
+            style={styles.input}
+          />
+        </View>
+        <View style={[styles.verticallySpaced, styles.mt20]}>
+          <TouchableOpacity
+            style={[styles.button, loading && styles.buttonDisabled]}
+            onPress={verifyCode}
+            disabled={loading}
+          >
+            <Text style={styles.buttonText}>Verify</Text>
+          </TouchableOpacity>
+        </View>
+        <View style={styles.verticallySpaced}>
+          <TouchableOpacity style={styles.debugButton} onPress={() => setCodeSent(false)} disabled={loading}>
+            <Text style={styles.buttonText}>Back</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
   }
 
   return (
